@@ -2,8 +2,9 @@
 ; Ядро
 ; ------------------------------------------------------------------
 
+; TODO: Добавить больше команд
 ; TODO: Сделать IDT клавиатурную очередь FIFO а не LIFO
-; TODO: Перенести все функции связанные со строками в src/functions/str.asm
+; TODO: Сделать выделение памяти
 
 org 0x8000
 
@@ -13,7 +14,7 @@ org 0x8000
 bits 32
 
 ; Interrupt Descriptor Table
-%include "src/kernel/idt.asm"
+%include "src/kernel/idt.asm" 
 
 ; Стартовая точка ядра
 protected_start:
@@ -30,34 +31,30 @@ protected_start:
 	; IDT
 	call init_idt_and_pic
 	
-    sti ; Включение прерываний
+    sti ; Включить прерывания
 	
-	; Инициализация GUI
+	; Включить A20 Line (>1МБ ОЗУ)
+	call enable_A20
+	
+	; PRNG
+	call get_rtc_time
+	; Первые 2 байта State[0] = 0xMMSS (M - минуты, S - секунды)
+	mov word [rng_state], bx	
+	; Вторые 2 байта State[0] = 0xDDHH (D - дни, H - часы)
+	mov word [rng_state + 2], cx
+	
+	; Инициализизовать GUI
 	call init_gui
 	
 	; Установить форму курсора
 	mov ah, 0b00000000
 	call set_cursor
+	
+; ------------------------------------------------------------------
 
 ; Цикл программы
 event_loop:
-	; Тест PIT ISR
-	mov al, [pos_x]
-	mov ah, [pos_y]
-	push ax
-	
-	mov byte [pos_x], 12
-	mov byte [pos_y], 5
-	mov eax, [system_timer_ticks]
-	mov [reg32], eax
-	call print_reg32
-	
-	pop ax
-	mov [pos_y], ah
-	mov [pos_x], al
-
 	; Обновление GUI
-	mov byte [attr], 0x70
 	call update_gui
 	mov byte [attr], 0x07
 		
@@ -79,7 +76,7 @@ event_loop:
 	jz .non_ascii
 	
 	; Печать
-	call print_char	
+	call print_char
 	
 	; Сохранить символ в user_input
 	movzx ebx, byte [user_input_top]
@@ -99,6 +96,7 @@ event_loop:
 	
 	; Enter
 	cmp ax, 0x1C
+	jne .finished_key
 	call input_done
 .finished_key:
 	; Убрать элемент после того как он был обработан
@@ -110,6 +108,8 @@ event_loop:
 	jmp .finished_key
 .skip_key:
     jmp event_loop	
+	
+; ------------------------------------------------------------------
 
 ; Макрос для команд
 %macro command 1
@@ -123,7 +123,16 @@ event_loop:
 input_done:
 	; Сбросить GUI
 	call init_gui
-
+	
+	; Если ввод пустой, пропустить обработку команд
+	cmp byte [user_input], 0
+	je .ret
+	
+	; Сохранить позицию
+	mov al, [pos_x]
+	mov ah, [pos_y]
+	push ax
+	
 	; Команда panic
 	command panic_cmd_str
 	je panic_cmd
@@ -134,15 +143,37 @@ input_done:
 .cmp3:
 	; Команда ping
 	command ping_cmd_str
-	jne .end
+	jne .cmp4
 	call ping_cmd
+	jmp .end
+.cmp4:
+	; Команда rand
+	command rand_cmd_str
+	jne .fail
+	call rand_cmd
+	jmp .end
+.fail:
+	; Вывести invalid_cmd_msg на экран
+	mov byte [attr], 0x04		; Красный
+	mov byte [pos_x], 0			; Под командной строкой
+	mov byte [pos_y], 2			;
+	mov esi, invalid_cmd_msg	; Сообщение
+	call print_str				; Печать
+	mov byte [attr], 0x07		; Вернуть цвет
 .end:
 	; Сбросить ввод
 	call reset_user_input
-	mov byte [pos_x], 2
-	mov byte [pos_y], 4
 	
+	; Восстановить позицию
+	pop ax
+	mov [pos_y], ah
+	mov [pos_x], al
+	
+.ret:
 	ret
+invalid_cmd_msg db 'Invalid command', 0
+
+; ------------------------------------------------------------------
 
 done:
 	cli
@@ -156,6 +187,9 @@ done:
 
 ; Драйвер Real Time Clock
 %include "src/drivers/rtc.asm"
+
+; Код для включения A20 Line
+%include "src/kernel/a20.asm"
 
 ; ------------------------------------------------------------------
 
@@ -175,65 +209,17 @@ done:
 
 ; ------------------------------------------------------------------
 
-ping_cmd:
-	; "pong"
-	mov esi, pong_msg
-	mov byte [pos_x], 0
-	mov byte [pos_y], 6
-	call print_str
-	
-	ret
-ping_cmd_str db 'ping', 0
-pong_msg db 'pong', 0
-
-panic_cmd:
-	; Будет GPF, в защищённом режиме BIOS прерывания не доступны
-	int 10h
-	
-	; Если не получилось сделать GPF вывести сообщение на экран
-	mov byte [attr], 0x4F
-	mov esi, failed_gpf_msg
-	mov byte [pos_x], 0
-	mov byte [pos_y], 0
-	call print_str
-	
-	; Остановить процессор
-	jmp done
-panic_cmd_str db 'panic', 0
-failed_gpf_msg db 'Failed to produce GPF', 0
-
-restart_cmd:
-    cli	; Выключить прерывания
-.wait_kbc:
-    in al, 0x64		; Статусный порт i8042
-    test al, 0x02	; Входной буфер занят?
-    jnz .wait_kbc	; Ожидание
-
-    mov al, 0xFE	; Перезагрузка (0xFE в порт 0x64)
-    out 0x64, al
-	
-	; Если перезагрузка не сработала вывести сообщение на экран
-	mov byte [attr], 0x4F
-	mov esi, failed_restart_msg
-	mov byte [pos_x], 0
-	mov byte [pos_y], 0
-	call print_str
-	
-	; Остановить процессор
-	jmp done
-restart_cmd_str db 'restart', 0
-failed_restart_msg db 'Failed to restart', 0
+; Команды
+%include "src/kernel/cmd.asm"
 
 reset_user_input:
 	mov ecx, 0
-	
 	mov byte [user_input_top], 0
-	
 .loop:
 	mov byte [user_input + ecx], 0
 
 	inc ecx
-	cmp ecx, 63
+	cmp ecx, 64
 	jb .loop
 	
 	ret

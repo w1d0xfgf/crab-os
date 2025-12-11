@@ -8,7 +8,7 @@
 ; Меняет: EAX, EBX, ESI, EDI
 println_str:
 	call print_str		; Печать строки
-	mov byte [pos_x], 0	; Возвращение каретки
+	mov byte [pos_x], 0	; Возврат каретки
 	inc byte [pos_y]	; Следующая линия
 	
 	ret
@@ -19,24 +19,14 @@ println_str:
 ;
 ; Меняет: EAX, EBX, ECX, ESI, EDI
 print_reg32:
-    mov edi, out_str_32		; Адрес out_str_32
-    mov eax, [reg32]		; Значение reg32
-    mov esi, hex_str		; Адрес hex_str
-	mov ecx, 8 				; Количество символов
-.loop:
-    rol eax, 4				; Смещение EAX вправо на 4, последняя 16-ичная цифра будет первой
-    mov ebx, eax			; Копия EAX -> EBX
-    and ebx, 0x0F			; Оставить последнюю 16-ичную цифру
-    mov bl, [esi + ebx]		; Получение символа: hex_str[EBX]	
-    mov [edi], bl			; Запись символа в строку out_str_32
+    ; Конвертация
+	mov edi, out_str_32
+    mov eax, [reg32]
+	call hex_str_from_eax
 	
-	; Следующая итерация
-    inc edi					; Следующий символ в строке out_str_32
-    dec ecx					; Следующая цифра
-    jnz .loop
-
-    mov esi, out_str_32		; Адрес out_str_32 -> ESI
-    call print_str			; Печать
+	; Печать
+    mov esi, out_str_32
+    call print_str	
 	
     ret
 	
@@ -50,7 +40,7 @@ out_str_32 db '00000000', 0
 ; Меняет: EAX, EBX, ESI, EDI
 println_reg32:
 	call print_reg32	; Печать
-	mov byte [pos_x], 0	; Возвращение каретки
+	mov byte [pos_x], 0	; Возврат каретки
 	inc byte [pos_y]	; Следующая линия
 	
 	ret
@@ -81,7 +71,7 @@ out_str_8 db '00', 0
 ; Меняет: EAX, EBX, ESI, EDI
 println_reg8:
 	call print_reg8		; Печать
-	mov byte [pos_x], 0	; Возвращение каретки
+	mov byte [pos_x], 0	; Возврат каретки
 	inc byte [pos_y]	; Следующая линия
 	
 	ret

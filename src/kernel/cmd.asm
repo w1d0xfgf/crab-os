@@ -1,0 +1,75 @@
+; ------------------------------------------------------------------
+; Команды в консоли
+; ------------------------------------------------------------------
+
+; Вывод случайного числа в формате "0xXXXXXXXX"
+rand_cmd:
+	; "0x"
+	mov byte [pos_x], 0
+	mov byte [pos_y], 2
+	mov al, '0'
+	call print_char
+	mov al, 'x'
+	call print_char
+	
+	; Число
+	call rng_next
+	mov [reg32], eax
+	call print_reg32
+	
+	ret
+rand_cmd_str db 'rand', 0
+
+; Вывод "pong" на экран
+ping_cmd:
+	mov esi, pong_msg
+	mov byte [pos_x], 0
+	mov byte [pos_y], 2
+	call print_str
+	
+	ret
+ping_cmd_str db 'ping', 0
+pong_msg db 'pong', 0
+
+; Сделать GPF (General protection fault)
+panic_cmd:
+	; Будет GPF, в защищённом режиме BIOS прерывания не доступны
+	int 10h
+	
+	; Если не получилось сделать GPF вывести failed_gpf_msg на экран
+	mov byte [attr], 0x1F
+	call clear_screen
+	mov esi, failed_gpf_msg
+	mov byte [pos_x], 0
+	mov byte [pos_y], 0
+	call print_str
+	
+	; Остановить процессор
+	jmp done
+panic_cmd_str db 'panic', 0
+failed_gpf_msg db 'Failed to produce GPF', 0
+
+; Перезапустить компьютер
+restart_cmd:
+    cli	; Выключить прерывания
+.wait_kbc:
+    in al, 0x64		; Статусный порт i8042
+    test al, 0x02	; Входной буфер занят?
+    jnz .wait_kbc	; Ожидание
+
+	; Перезагрузка (0xFE в порт 0x64)
+    mov al, 0xFE	
+    out 0x64, al
+	
+	; Если перезагрузка не сработала вывести failed_restart_msg на экран
+	mov byte [attr], 0x1F
+	call clear_screen
+	mov esi, failed_restart_msg
+	mov byte [pos_x], 0
+	mov byte [pos_y], 0
+	call print_str
+	
+	; Остановить процессор
+	jmp done
+restart_cmd_str db 'restart', 0
+failed_restart_msg db 'Failed to restart', 0

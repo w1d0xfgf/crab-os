@@ -9,12 +9,14 @@ init_gui:
 	mov byte [attr], 0x07
 	
 	call clear_screen
-
-	; Инициализация GUI времени и даты
+	
+	; Инициализация GUI ОС
+	mov byte [attr], 0x70
 	mov byte [pos_x], 0
 	mov byte [pos_y], 0
-	mov esi, time_gui_init
+	mov esi, os_gui_init
 	call println_str
+	mov byte [attr], 0x07
 	
 	; Инициализация GUI командной строки
 	mov al, '>'
@@ -22,12 +24,8 @@ init_gui:
 	mov byte [pos_x], 0
 	inc byte [pos_y]
 	
-	; Инициализация GUI PIT
-	mov esi, pit_gui_init
-	call print_str
-	
 	; Курсор в начало командной строки
-	mov byte [pos_y], 4
+	mov byte [pos_y], 1
 	mov byte [pos_x], 2
 	call cursor_to_pos
 	
@@ -37,6 +35,14 @@ init_gui:
 ;
 ; Меняет: EAX, EBX, ECX, EDX, ESI, EDI
 update_gui:
+	; Позиции GUI времени и даты
+	TIME_GUI_POS_X equ 57
+	TIME_GUI_POS_Y equ 0
+	DATE_GUI_POS_X equ 67
+	DATE_GUI_POS_Y equ 0
+	
+	mov byte [attr], 0x87
+
 	cli
 	
 	; Получить время
@@ -59,66 +65,66 @@ update_gui:
 	push ebx
 	
 	; Время
-	mov byte [pos_x], 6 + 7
-	mov byte [pos_y], 0
+	mov byte [pos_x], 6 + TIME_GUI_POS_X
+	mov byte [pos_y], TIME_GUI_POS_Y
 	movzx eax, bl
 	mov [reg8], al
 	call print_reg8
 	
-	mov byte [pos_x], 3 + 7
-	mov byte [pos_y], 0
+	mov byte [pos_x], 3 + TIME_GUI_POS_X
+	mov byte [pos_y], TIME_GUI_POS_Y
 	pop ebx
 	movzx eax, bh
 	mov [reg8], al
 	call print_reg8
 	
-	mov byte [pos_x], 0 + 7
-	mov byte [pos_y], 0
+	mov byte [pos_x], 0 + TIME_GUI_POS_X
+	mov byte [pos_y], TIME_GUI_POS_Y
 	pop ecx
 	movzx eax, cl
 	mov [reg8], al
 	call print_reg8
 	
 	; Двоиточия во времени
-	mov byte [pos_x], 2 + 7
+	mov byte [pos_x], 2 + TIME_GUI_POS_X
 	mov al, ':'
 	call print_char
 	
-	mov byte [pos_x], 5 + 7
+	mov byte [pos_x], 5 + TIME_GUI_POS_X
 	mov al, ':'
 	call print_char
 	
 	; Дата
-	mov byte [pos_x], 0 + 7
-	mov byte [pos_y], 2
+	mov byte [pos_x], DATE_GUI_POS_X
+	mov byte [pos_y], DATE_GUI_POS_Y
 	pop ecx
 	movzx eax, ch
 	mov [reg8], al
 	call print_reg8
 
-	mov byte [pos_x], 3 + 7
-	mov byte [pos_y], 2
+	mov byte [pos_x], 3 + DATE_GUI_POS_X
+	mov byte [pos_y], DATE_GUI_POS_Y
 	pop edx
 	movzx eax, dl
 	mov [reg8], al
 	call print_reg8
 
-	mov byte [pos_x], 6 + 7
-	mov byte [pos_y], 2
+	mov byte [pos_x], 6 + DATE_GUI_POS_X
+	mov byte [pos_y], DATE_GUI_POS_Y
 	pop edx
 	movzx eax, dh
 	mov [reg8], al
 	call print_reg8
 	
-	; Точки в дате
-	mov byte [pos_x], 2 + 7
-	mov byte [pos_y], 2
-	mov al, '.'
+	; / в дате
+	mov byte [pos_x], 2 + DATE_GUI_POS_X
+	mov byte [pos_y], DATE_GUI_POS_Y
+	mov al, '/'
 	call print_char
 	
-	mov byte [pos_x], 5 + 7
-	mov byte [pos_y], 2
-	mov al, '.'
+	mov byte [pos_x], 5 + DATE_GUI_POS_X
+	mov byte [pos_y], DATE_GUI_POS_Y
+	mov al, '/'
 	call print_char
 	
 	; Восстановить позицию
