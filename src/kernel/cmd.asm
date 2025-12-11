@@ -2,6 +2,23 @@
 ; Команды в консоли
 ; ------------------------------------------------------------------
 
+; Вывод списка команд
+help_cmd:
+	mov esi, cmd_list_msg
+	mov byte [pos_x], 0
+	mov byte [pos_y], 2
+	call print_str
+	
+	ret
+help_cmd_str db 'help', 0
+cmd_list_msg:
+	db 'Commands:', 13, 10
+	db 'help - Show this list', 13, 10
+	db 'rand - Print a random 32-bit value', 13, 10
+	db 'ping - Print "pong"', 13, 10
+	db 'panic - Cause a GPF (General Protection Fault)', 13, 10
+	db 'restart - Power cycle the motherboard', 0
+
 ; Вывод случайного числа в формате "0xXXXXXXXX"
 rand_cmd:
 	; "0x"

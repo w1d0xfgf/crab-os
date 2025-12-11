@@ -149,12 +149,18 @@ input_done:
 .cmp4:
 	; Команда rand
 	command rand_cmd_str
-	jne .fail
+	jne .cmp5
 	call rand_cmd
+	jmp .end
+.cmp5:
+	; Команда rand
+	command help_cmd_str
+	jne .fail
+	call help_cmd
 	jmp .end
 .fail:
 	; Вывести invalid_cmd_msg на экран
-	mov byte [attr], 0x04		; Красный
+	mov byte [attr], 0x0C		; Ярко-красный
 	mov byte [pos_x], 0			; Под командной строкой
 	mov byte [pos_y], 2			;
 	mov esi, invalid_cmd_msg	; Сообщение
@@ -168,10 +174,11 @@ input_done:
 	pop ax
 	mov [pos_y], ah
 	mov [pos_x], al
-	
 .ret:
 	ret
-invalid_cmd_msg db 'Invalid command', 0
+invalid_cmd_msg:
+	db 'Invalid command.', 13, 10
+	db 'Type "help" for a list of commands.', 0
 
 ; ------------------------------------------------------------------
 

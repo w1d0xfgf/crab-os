@@ -41,7 +41,7 @@ update_gui:
 	DATE_GUI_POS_X equ 67
 	DATE_GUI_POS_Y equ 0
 	
-	mov byte [attr], 0x87
+	mov byte [attr], 0x70
 
 	cli
 	
