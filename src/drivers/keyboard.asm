@@ -2,6 +2,16 @@
 ; Драйвер клавиатуры
 ; ------------------------------------------------------------------
 
+; Ожидать нажатия клавиши и выдать scancode
+;
+; Scancode: EBX
+wait_key:
+	movzx ebx, byte [key_queue_top]		; Проверить есть ли в очереди клавиши
+	cmp ebx, 0							; 
+	je wait_key						    ; Если нет, повторить
+
+    ret
+
 ; Хендлер клавиатуры
 keyboard_handler:
 	; Scancode
@@ -24,6 +34,7 @@ keyboard_handler:
     mov byte [prev_E0], 0
     or bl, 0x80
 .store_normal_press:
+    ; Установить статус соответствующей сканкоду клавиши: нажато
     mov byte [keys_pressed + ebx], 1
 	
 	; Очередь
@@ -45,6 +56,7 @@ keyboard_handler:
     mov byte [prev_E0], 0
     or bl, 0x80       
 .store_normal_release:
+    ; Установить статус соответствующей сканкоду клавиши: не нажато
     mov byte [keys_pressed + ebx], 0
     jmp .end
 .prefix_E0:

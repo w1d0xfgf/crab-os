@@ -2,11 +2,6 @@
 ; Данные
 ; ------------------------------------------------------------------
 
-os_gui_init:
-	db 'CrabOS v0.1.1'
-	times (80 - ($ - os_gui_init)) db ' '
-	db 0
-
 ; Атрибут (цвет) печати на экран
 attr db 0x07
 
@@ -17,10 +12,6 @@ pos_y db 0
 ; Аргументы print_reg32, println_reg32, print_reg8 и println_reg8
 reg32 dd 0
 reg8 db 0
-
-; Строка которую ввёл пользователь
-user_input: times 64 db 0
-user_input_top: db 0
 
 ; panic
 panic_msg:
