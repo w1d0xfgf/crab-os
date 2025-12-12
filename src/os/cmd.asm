@@ -53,7 +53,7 @@ help_cmd:
 help_cmd_str db 'help', 0
 cmd_list_msg:
 	db 'Commands:', 13, 10
-	db 'fib     - Print the next fibonacci number'
+	db 'fib     - Print the next fibonacci number', 13, 10
 	db 'help    - Show this list', 13, 10
 	db 'rand    - Print a random 32-bit value', 13, 10
 	db 'panic   - Cause a GPF (General Protection Fault)', 13, 10
