@@ -6,17 +6,17 @@
 ;
 ; Меняет: EAX, EBX, ECX, EDX, ESI, EDI
 init_gui:
-	mov byte [attr], 0x07
+	mov byte [vga_attr], 0x07
 	
 	call clear_screen
 	
 	; Инициализация GUI ОС
-	mov byte [attr], 0x70
+	mov byte [vga_attr], 0x70
 	mov byte [pos_x], 0
 	mov byte [pos_y], 0
 	mov esi, os_gui_init
 	call println_str
-	mov byte [attr], 0x07
+	mov byte [vga_attr], 0x07
 	
 	; Инициализация GUI командной строки
 	mov al, '>'
@@ -41,7 +41,7 @@ update_gui:
 	DATE_GUI_POS_X equ 67
 	DATE_GUI_POS_Y equ 0
 	
-	mov byte [attr], 0x70
+	mov byte [vga_attr], 0x70
 
 	cli
 	

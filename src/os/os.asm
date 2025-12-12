@@ -14,7 +14,7 @@ startup:
 event_loop:
 	; Обновление GUI
 	call update_gui
-	mov byte [attr], 0x07
+	mov byte [vga_attr], 0x07
 
     ; Ожидание клавиши
     call wait_key
@@ -24,10 +24,6 @@ event_loop:
 	movzx ebx, byte [key_queue_top]		; Проверить есть ли в очереди клавиши
 	cmp ebx, 0							; 
 	je .skip_key						; Пропустить обработку клавиши если очередь пустая
-
-	; Проверить, заполнен ли user_input (user_input_top >= длина - 1)
-	cmp byte [user_input_top], 31
-	jae .skip_key
 	
 	; Scancode
 	dec ebx								; EBX = Индекс верхнего элемента
@@ -35,17 +31,35 @@ event_loop:
 	
 	; Символ
 	push ax
+
+	; Проверка на левый и правый Shift
+	cmp byte [keys_pressed + 0x2A], 1
+	je .shift_pressed
+	cmp byte [keys_pressed + 0x36], 1
+	je .shift_pressed
+
+	; Если Shift не нажат, обычная таблица Scancode -> ASCII
 	mov al, [scancode_to_ascii + eax]
+	jmp .converted
+.shift_pressed:
+	; Если Shift нажат, другая таблица Scancode -> ASCII
+	mov al, [scancode_to_ascii_shift + eax]
+.converted:
+	; Обработка непечатаемых символов (в таблице они 0)
 	test al, al
 	jz .non_ascii
-	
-	; Печать
-	call print_char
-	
+
+	; Проверить, заполнен ли user_input (user_input_top >= длина - 1)
+	cmp byte [user_input_top], 31
+	jae .finished_key
+
 	; Сохранить символ в user_input
 	movzx ebx, byte [user_input_top]
 	mov [user_input + ebx], al
 	inc byte [user_input_top]
+	
+	; Печать
+	call print_char
 	
 	; Обновить позицию курсора
 	call cursor_to_pos
@@ -136,19 +150,25 @@ input_done:
 	call rand_cmd
 	jmp .end
 .cmp5:
-	; Команда rand
+	; Команда help
 	command help_cmd_str
-	jne .fail
+	jne .cmp6
 	call help_cmd
+	jmp .end
+.cmp6:
+	; Команда fib
+	command fib_cmd_str
+	jne .fail
+	call fib_cmd
 	jmp .end
 .fail:
 	; Вывести invalid_cmd_msg на экран
-	mov byte [attr], 0x0C		; Ярко-красный
-	mov byte [pos_x], 0			; Под командной строкой
-	mov byte [pos_y], 2			;
-	mov esi, invalid_cmd_msg	; Сообщение
-	call print_str				; Печать
-	mov byte [attr], 0x07		; Вернуть цвет
+	mov byte [vga_attr], 0x0C		; Ярко-красный
+	mov byte [pos_x], 0				; Под командной строкой
+	mov byte [pos_y], 2				;
+	mov esi, invalid_cmd_msg		; Сообщение
+	call print_str					; Печать
+	mov byte [vga_attr], 0x07		; Вернуть цвет
 .end:
 	; Сбросить ввод
 	call reset_user_input
@@ -193,9 +213,12 @@ reset_user_input:
 
 ; ------------------------------------------------------------------
 
+; Размер строки ввода в байтах
+USER_INPUT_SIZE_BYTES equ 32
+
 ; Строка которую ввёл пользователь
-user_input: times 32 db 0
+user_input: times USER_INPUT_SIZE_BYTES db 0
 user_input_top: db 0
 
 ; Обрезанная строка (без лишних пробелов, \n и \r)
-user_input_trimmed: times 32 db 0
+user_input_trimmed: times USER_INPUT_SIZE_BYTES db 0

@@ -61,7 +61,7 @@ print_char:
 
 	; Запись в VGA текстовый буфер
     mov [edi], al 			; Записать символ
-    mov bl, [attr]          ; Загрузить атрибут
+    mov bl, [vga_attr]      ; Загрузить атрибут
     mov [edi + 1], bl       ; Записать его
 	inc byte [pos_x]		; Следующая позиция на экране
 	
@@ -87,7 +87,7 @@ print_str:
 	
 	; Запись в VGA тектовый буфер
     mov [edi], al 				; Записать символ
-    mov bl, [attr]              ; Загрузить атрибут
+    mov bl, [vga_attr]          ; Загрузить атрибут
     mov [edi + 1], bl           ; Записать его
 
 	; Следующая итерация
@@ -116,7 +116,7 @@ clear_screen:
 	
 	; Символ и атрибут
 	mov al, ' '
-	mov ah, [attr]
+	mov ah, [vga_attr]
 	
 	; AX -> EDI, EDI += 2, ECX-- до того как ECX = 0
 	rep stosw

@@ -16,8 +16,8 @@
 	mov ah, 0b00010000
 	call set_cursor
 
-	; Очистить экран цветом attr
-	mov byte [attr], %2
+	; Очистить экран цветом vga_attr
+	mov byte [vga_attr], %2
 	call clear_screen
 	
 	; Вывести сообщение

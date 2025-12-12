@@ -19,6 +19,7 @@ keyboard_handler:
     movzx ebx, al
 	
 	; Проверка на E0
+    ; Если байт от клавиатуры 0xE0, значит код расширенный (следующий байт это код)
     cmp al, 0xE0
     je .prefix_E0
 
@@ -38,10 +39,12 @@ keyboard_handler:
     mov byte [keys_pressed + ebx], 1
 	
 	; Очередь
-	movzx eax, byte [key_queue_top]     ; индекс
-	mov [key_queue + eax], bl   	 	; записать scancode
-	inc byte [key_queue_top]     		; увеличить индекс
-	
+	movzx eax, byte [key_queue_top]     ; Индекс
+    cmp eax, KEY_QUEUE_SIZE - 1         ; Если очередь заполнена, пропустить запись
+    jz .press_stored                    ;
+	mov [key_queue + eax], bl   	 	; Записать scancode
+	inc byte [key_queue_top]     		; Увеличить индекс
+.press_stored:
     jmp .end
 .key_release:
 	; Перевод в make code
@@ -64,7 +67,8 @@ keyboard_handler:
 .end:
     ret
 
-key_queue times 64 db 0			; Очередь для нажатых клавиш
-key_queue_top db 0				; Указатель на вершину очереди
-keys_pressed times 256 db 0		; Нажатые в данный момент клавиши
-prev_E0 db 0					; Является ли клавиша расширенной или обычной
+KEY_QUEUE_SIZE equ 16               ; Размер очереди
+key_queue times KEY_QUEUE_SIZE db 0	; Очередь для нажатых клавиш
+key_queue_top db 0				    ; Указатель на вершину очереди
+keys_pressed times 256 db 0		    ; Нажатые в данный момент клавиши
+prev_E0 db 0					    ; Является ли клавиша расширенной или обычной
