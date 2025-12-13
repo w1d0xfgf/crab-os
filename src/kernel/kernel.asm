@@ -74,3 +74,5 @@ bits 32
 stack_bottom:
 	times 4096 db 0
 stack_top:
+
+times (32 * 512) - ($ - $$) db 0 ; Заполнить до 32 секторов (необязательно)

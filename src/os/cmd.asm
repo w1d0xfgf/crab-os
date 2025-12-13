@@ -2,6 +2,83 @@
 ; Команды в консоли
 ; ------------------------------------------------------------------
 
+; Игра Pong
+game_cmd:
+	; Скрыть курсор
+	mov ah, 0b00010000
+	call set_cursor
+.update:
+	call clear_screen
+
+	mov byte [key_queue_top], 0
+
+	cmp byte [keys_pressed + (0x48 | 0x80)], 1
+	je .p1_up
+	cmp byte [keys_pressed + (0x50 | 0x80)], 1
+	je .p1_down
+	jmp .p1_finished
+.p1_up:
+	dec byte [p1_paddle_pos]
+	jmp .p1_finished
+.p1_down:
+	inc byte [p1_paddle_pos]
+.p1_finished:
+
+	cmp byte [keys_pressed + 0x11], 1
+	je .p2_up
+	cmp byte [keys_pressed + 0x1F], 1
+	je .p2_down
+	jmp .p2_finished
+.p2_up:
+	dec byte [p2_paddle_pos]
+	jmp .p2_finished
+.p2_down:
+	inc byte [p2_paddle_pos]
+.p2_finished:
+
+	mov byte [pos_x], 1
+	mov al, [p1_paddle_pos]
+	mov byte [pos_y], al
+	mov al, 0xDB
+	dec byte [pos_y]
+	call print_char
+	dec byte [pos_x]
+	inc byte [pos_y]
+	call print_char
+	dec byte [pos_x]
+	inc byte [pos_y]
+	call print_char
+
+	mov byte [pos_x], 78
+	mov al, [p2_paddle_pos]
+	mov byte [pos_y], al
+	mov al, 0xDB
+	dec byte [pos_y]
+	call print_char
+	dec byte [pos_x]
+	inc byte [pos_y]
+	call print_char
+	dec byte [pos_x]
+	inc byte [pos_y]
+	call print_char
+
+.start_wait:
+	mov ax, [system_timer_ticks]
+.wait:
+	mov dx, [system_timer_ticks]
+	sub dx, ax
+	cmp dx, 10
+	jb .wait
+	jmp .update
+
+	ret
+game_cmd_str db 'game', 0
+p1_paddle_pos db 10
+p2_paddle_pos db 10
+ball_pos_x db 0
+ball_pos_y db 0
+ball_dir db 0 	; 0 - влево вверх, 1 - вправо вверх, 2 - влево вниз, 3 - вправо вниз
+
 ; Вывод следующего числа фибоначчи в формате "0xXXXXXXXX"
 fib_cmd:
 	; "0x"

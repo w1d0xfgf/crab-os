@@ -2,25 +2,7 @@
 ; Данные
 ; ------------------------------------------------------------------
 
-; VGA атрибут (цвет) печати на экран
-vga_attr db 0x07
-
-; Координаты в символах печати на экран
-pos_x db 0
-pos_y db 0
-
-; Аргументы print_reg32, println_reg32, print_reg8 и println_reg8
-reg32 dd 0
-reg8 db 0
-
-; panic
-panic_msg:
-		db '      PANIC!          ', 13, 10
-		db '                      ', 13, 10
-		db '      _~^~^~_         ', 13, 10
-		db '  \) /  o o  \ (/     ', 13, 10
-		db "    '_   ", 0x7F, "   _'       ", 13, 10
-		db "    / '-----' \       ", 0
+PIT_FREQ equ 100
 
 ; Таблица для перевода Scancode (set 1) в ASCII
 ; таблица[сканкод] = ASCII символ
@@ -120,7 +102,7 @@ scancode_to_ascii:
     db 0
     db 0
     db 0
-	times (0x80 - ($ - scancode_to_ascii)) db 0
+	times (0x255 - ($ - scancode_to_ascii)) db 0
 
 ; Таблица для перевода Scancode (set 1) в ASCII когда нажата клавиша Shift
 ; таблица[сканкод] = ASCII символ
@@ -220,4 +202,4 @@ scancode_to_ascii_shift:
     db 0
     db 0
     db 0
-    times (0x80 - ($ - scancode_to_ascii_shift)) db 0
+    times (0x255 - ($ - scancode_to_ascii_shift)) db 0

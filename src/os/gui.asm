@@ -11,7 +11,7 @@ init_gui:
 	call clear_screen
 	
 	; Инициализация GUI ОС
-	mov byte [vga_attr], 0x70
+	mov byte [vga_attr], 0x60
 	mov byte [pos_x], 0
 	mov byte [pos_y], 0
 	mov esi, os_gui_init
@@ -30,18 +30,21 @@ init_gui:
 	call cursor_to_pos
 	
 	ret
+; GUI ОС
+os_gui_init:
+	db ' CrabOS v0.1.3 | - - - - - - - - - - - - - - - - - - - - - -|                   ', 0
 
 ; Обновляет GUI времени и даты
 ;
 ; Меняет: EAX, EBX, ECX, EDX, ESI, EDI
 update_gui:
 	; Позиции GUI времени и даты
-	TIME_GUI_POS_X equ 57
+	TIME_GUI_POS_X equ 62
 	TIME_GUI_POS_Y equ 0
-	DATE_GUI_POS_X equ 67
+	DATE_GUI_POS_X equ 71
 	DATE_GUI_POS_Y equ 0
 	
-	mov byte [vga_attr], 0x70
+	mov byte [vga_attr], 0x06
 
 	cli
 	
@@ -85,7 +88,7 @@ update_gui:
 	mov [reg8], al
 	call print_reg8
 	
-	; Двоиточия во времени
+	; ":" во времени
 	mov byte [pos_x], 2 + TIME_GUI_POS_X
 	mov al, ':'
 	call print_char
@@ -116,7 +119,7 @@ update_gui:
 	mov [reg8], al
 	call print_reg8
 	
-	; / в дате
+	; "/" в дате
 	mov byte [pos_x], 2 + DATE_GUI_POS_X
 	mov byte [pos_y], DATE_GUI_POS_Y
 	mov al, '/'
@@ -135,9 +138,3 @@ update_gui:
 	sti ; Включить прерывания
 	
 	ret
-
-; GUI ОС
-os_gui_init:
-	db 'CrabOS v0.1.1'
-	times (80 - ($ - os_gui_init)) db ' '
-	db 0

@@ -37,21 +37,21 @@ compare_strs:
 ; Адрес строки: EDI
 ; Меняет: AL, EBX, ECX, EDI	
 hex_str_from_eax:
-    mov esi, hex_str		; Адрес hex_str
+	mov esi, hex_str		; Адрес hex_str
 	mov ecx, 8 				; Количество символов
 .loop:
-    rol eax, 4				; Смещение EAX вправо на 4, последняя 16-ичная цифра будет первой
-    mov ebx, eax			; Копия EAX -> EBX
-    and ebx, 0x0F			; Оставить последнюю 16-ичную цифру
-    mov bl, [esi + ebx]		; Получение символа: hex_str[EBX]	
-    mov [edi], bl			; Запись символа в строку
+	rol eax, 4				; Смещение EAX вправо на 4, последняя 16-ичная цифра будет первой
+	mov ebx, eax			; Копия EAX -> EBX
+	and ebx, 0x0F			; Оставить последнюю 16-ичную цифру
+	mov bl, [esi + ebx]		; Получение символа: hex_str[EBX]	
+	mov [edi], bl			; Запись символа в строку
 	
 	; Следующая итерация
-    inc edi					; Следующий символ в строке
-    dec ecx					; Следующая цифра
-    jnz .loop
+	inc edi					; Следующий символ в строке
+	dec ecx					; Следующая цифра
+	jnz .loop
 	
-    ret
+	ret
 	
 ; ------------------------------------------------------------------
 
@@ -60,16 +60,16 @@ hex_str_from_eax:
 ; Адрес строки: EDI
 ; Меняет: AL, EBX, ECX, EDI	
 hex_str_from_al:
-    mov esi, hex_str		; Адрес hex_str
+	mov esi, hex_str		; Адрес hex_str
 	mov ecx, 2 				; Счётчик
 	; Если не обнулить EBX, в битах 32-8 будут другие значения и они будут мешать
 	xor ebx, ebx				
 .loop:
 	rol al, 4				; Смещение EAX вправо на 4, последняя 16-ичная цифра будет первой
-    mov bl, al				; Копия AL -> BL
-    and bl, 0x0F			; Оставить последнюю 16-ичную цифру
-    mov bl, [esi + ebx]		; Получение символа: hex_str[EBX]	
-    mov [edi], bl			; Запись символа в строку по адресу EDI
+	mov bl, al				; Копия AL -> BL
+	and bl, 0x0F			; Оставить последнюю 16-ичную цифру
+	mov bl, [esi + ebx]		; Получение символа: hex_str[EBX]	
+	mov [edi], bl			; Запись символа в строку по адресу EDI
 	
 	; Следующая итерация 
 	inc edi
@@ -86,87 +86,80 @@ hex_str_from_al:
 ; Адрес входной строки: ESI
 ; Адрес выходной строки: EDI
 trim_str:
-
 ; Найти начало чистой строки
 .leading:
-	; Загрузить символ, если NULL (конец строки) пропустить всё
-    mov al, [esi]
-	cmp al, 0
-    je .empty
+	mov al, [esi]	; Загрузить символ в AL
+	cmp al, 0		; Если символ NULL (конец строки), чистая строка пустая
+	je .empty		; Пропустить всё
 
 	; Если символ пробел, \n, или \r, переход к следующему
-    cmp al, ' '
-    je .leading_next
-    cmp al, 13
-    je .leading_next
-    cmp al, 10
-    je .leading_next
+	cmp al, ' '
+	je .leading_next
+	cmp al, 13
+	je .leading_next
+	cmp al, 10
+	je .leading_next
 
 	; Иначе, закончить цикл
-    jmp .leading_done
+	jmp .leading_done
 .leading_next:
-    inc esi
-    jmp .leading
+	inc esi			; Следующий символ
+	jmp .leading	; Повторить цикл
 .leading_done:
 	; Адрес начала чистой строки
-    mov ebx, esi
+	mov ebx, esi
 
 ; Найти конец строки
 .find_end:
-	; Загрузить символ
-    mov al, [esi]
+	mov al, [esi]	; Загрузить символ в AL
 
-	; Если символ NULL -- конец строки
-    cmp al, 0
-    je .end_found
+	cmp al, 0		; Если символ NULL, конец строки
+	je .end_found	; Конец цикла (конец найден)
 
-	; Иначе, повторить
-    inc esi
-    jmp .find_end
-; Если нашёлся конец
+	inc esi			; Следующий символ
+	jmp .find_end	; Повторить цикл
 .end_found:
-    mov edx, esi         ; EDX = Адрес конца (символа NULL terminator)
-    dec edx              ; EDX = Адрес последнего реального символа
-    cmp edx, ebx
-    jb .empty            ; Если длина 0
+	mov edx, esi	; EDX = Адрес конца (символа NULL terminator)
+	dec edx			; EDX = Адрес последнего реального символа
+	cmp edx, ebx
+	jb .empty		; Если длина 0
 
 ; Найти конец чистой строки
 .trailing:
-	; Загрузить символ
-    mov al, [edx]
+	mov al, [edx]	; Загрузить символ в AL
 
 	; Если символ пробел, \n, или \r, переход к следующему
-    cmp al, ' '
-    je .trailing_next
-    cmp al, 13
-    je .trailing_next
-    cmp al, 10
-    je .trailing_next
+	cmp al, ' '
+	je .trailing_next
+	cmp al, 13
+	je .trailing_next
+	cmp al, 10
+	je .trailing_next
 
-	; Иначе, закончить цикл
-    jmp .copy
+	; Закончить цикл
+	jmp .copy
 .trailing_next:
-	; Если строка
-    dec edx
-    cmp edx, ebx
-    jae .trailing
+	; Следующий символ
+	dec edx
+	cmp edx, ebx
+	jae .trailing
 
-	; Если 
-    jmp .empty
+	; Если конец = начало, строка пустая
+	jmp .empty
 
-; Копия результата
+; Копия чистой строки в место назначения
 .copy:
-    inc edx                 ; сделать EDX на 1 дальше, чтобы ECX = длина
-    mov ecx, edx
-    sub ecx, ebx            ; длина trimmed строки
-    mov esi, ebx            ; источник = начало trimmed
+	inc edx				; Сделать EDX на 1 дальше, чтобы ECX = длина
+	mov ecx, edx
+	sub ecx, ebx		; Длина чистой строки
+	mov esi, ebx		; Источник = начало чистой строки
 
-    rep movsb               ; копирование
+	rep movsb			; Копирование
 
-    mov byte [edi], 0       ; завершить нулём
-    ret
+	mov byte [edi], 0	; Завершить NULL (обязательно)
+	ret
 
 ; Если строка пустая
 .empty:
-    mov byte [edi], 0
-    ret
+	mov byte [edi], 0
+	ret
