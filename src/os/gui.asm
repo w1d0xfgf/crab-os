@@ -138,6 +138,6 @@ update_gui:
 
 ; GUI ОС
 os_gui_init:
-	db 'CrabOS v0.1.1'
+	db 'CrabOS v0.1.2'
 	times (80 - ($ - os_gui_init)) db ' '
 	db 0
