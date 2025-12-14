@@ -111,12 +111,33 @@ print_str:
 ;
 ; Меняет: AX, ECX, EDI
 clear_screen:
-	mov ecx, 2000 				; Счётчик = 2000 (размер экрана 80x25 символов)
-	mov edi, VIDEO_MEM 			; Адрес VGA текстового буфера
+	mov ecx, 2000			; Счётчик = 2000 (размер экрана 80x25 символов)
+	mov edi, VIDEO_MEM		; Адрес VGA текстового буфера
 	
-	; Символ и атрибут
-	mov al, ' '
-	mov ah, [vga_attr]
+	mov al, ' '				; Символ
+	mov ah, [vga_attr]		; Атрибут
+	
+	; AX -> EDI, EDI += 2, ECX-- до того как ECX = 0
+	rep stosw
+
+	ret
+
+; ------------------------------------------------------------------
+
+; Очистить одну линию
+;
+; Линия: EAX
+; Меняет: AX, ECX, EDI
+clear_line:
+	mov ecx, 80			; Счётчик = 80 (размер линии 80 символов)
+
+	mov edi, VIDEO_MEM	; Адрес VGA текстового буфера
+	mov ebx, 80			; Вычислить смещение
+	mul ebx 			; 
+	add edi, eax		; Перейти к линии
+	
+	mov al, ' '			; Символ
+	mov ah, [vga_attr]	; Атрибут
 	
 	; AX -> EDI, EDI += 2, ECX-- до того как ECX = 0
 	rep stosw

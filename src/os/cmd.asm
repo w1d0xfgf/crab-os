@@ -2,82 +2,37 @@
 ; Команды в консоли
 ; ------------------------------------------------------------------
 
-; Игра Pong
-game_cmd:
-	; Скрыть курсор
-	mov ah, 0b00010000
-	call set_cursor
-.update:
-	call clear_screen
-
-	mov byte [key_queue_top], 0
-
-	cmp byte [keys_pressed + (0x48 | 0x80)], 1
-	je .p1_up
-	cmp byte [keys_pressed + (0x50 | 0x80)], 1
-	je .p1_down
-	jmp .p1_finished
-.p1_up:
-	dec byte [p1_paddle_pos]
-	jmp .p1_finished
-.p1_down:
-	inc byte [p1_paddle_pos]
-.p1_finished:
-
-	cmp byte [keys_pressed + 0x11], 1
-	je .p2_up
-	cmp byte [keys_pressed + 0x1F], 1
-	je .p2_down
-	jmp .p2_finished
-.p2_up:
-	dec byte [p2_paddle_pos]
-	jmp .p2_finished
-.p2_down:
-	inc byte [p2_paddle_pos]
-.p2_finished:
-
-	mov byte [pos_x], 1
-	mov al, [p1_paddle_pos]
-	mov byte [pos_y], al
-	mov al, 0xDB
-	dec byte [pos_y]
-	call print_char
-	dec byte [pos_x]
-	inc byte [pos_y]
-	call print_char
-	dec byte [pos_x]
-	inc byte [pos_y]
-	call print_char
-
-	mov byte [pos_x], 78
-	mov al, [p2_paddle_pos]
-	mov byte [pos_y], al
-	mov al, 0xDB
-	dec byte [pos_y]
-	call print_char
-	dec byte [pos_x]
-	inc byte [pos_y]
-	call print_char
-	dec byte [pos_x]
-	inc byte [pos_y]
-	call print_char
-
-.start_wait:
-	mov ax, [system_timer_ticks]
-.wait:
-	mov dx, [system_timer_ticks]
-	sub dx, ax
-	cmp dx, 10
-	jb .wait
-	jmp .update
+; Очистить экран
+cls_cmd:
+	call init_gui
 
 	ret
+cls_cmd_str db 'cls', 0
+
+; Вывести тики PIT на экран
+pit_cmd:
+	mov eax, [system_timer_ticks]
+	mov [reg32], eax
+	mov byte [pos_x], 0
+	mov byte [pos_y], 2
+	call print_reg32
+
+	ret
+pit_cmd_str db 'pit', 0
+
+; Игра Pong
+game_cmd:
+	%include "src/os/pong.asm"
 game_cmd_str db 'game', 0
-p1_paddle_pos db 10
-p2_paddle_pos db 10
-ball_pos_x db 0
-ball_pos_y db 0
-ball_dir db 0 	; 0 - влево вверх, 1 - вправо вверх, 2 - влево вниз, 3 - вправо вниз
+p1_paddle_pos db 10		; Позиция ракетки игрока 1
+p2_paddle_pos db 10		; Позиция ракетки игрока 2
+ball_pos_x db 30		; Позиция мячика
+ball_pos_y db 10		;
+ball_dir db 0 			; Направление: 0 - влево вверх, 1 - вправо вверх, 2 - влево вниз, 3 - вправо вниз
+last_update_ticks dd 0
+p1_won_msg db 'Player 1 won!', 0
+p2_won_msg db 'Player 2 won!', 0
+key_press_msg db 'Press any key...', 0
 
 ; Вывод следующего числа фибоначчи в формате "0xXXXXXXXX"
 fib_cmd:
@@ -130,12 +85,16 @@ help_cmd:
 help_cmd_str db 'help', 0
 cmd_list_msg:
 	db 'Commands:', 13, 10
-	db 'fib     - Print the next fibonacci number', 13, 10
-	db 'help    - Show this list', 13, 10
-	db 'rand    - Print a random 32-bit value', 13, 10
-	db 'panic   - Cause a GPF (General Protection Fault)', 13, 10
-	db 'restart - Power cycle the motherboard', 13, 10
-	db 'ping    - Print "pong"', 0
+	db 'echo <args> - Print args (NOT WORKING YET!)', 13, 10
+	db '              ', 0xC0, 'Example:', 13, 10
+	db '               > echo Hello', 13, 10
+	db '               Hello', 13, 10
+	db 'fib         - Print the next fibonacci number in hexadecimal', 13, 10
+	db 'game        - Play Pong', 13, 10
+	db 'help        - Show this list', 13, 10
+	db 'rand        - Print a random 32-bit number in hexadecimal', 13, 10
+	db 'pit         - Print PIT ticks in hexadecimal', 13, 10
+	db 'cls         - Clear the screen and re-initialize GUI', 0
 	
 ; Вывод случайного числа в формате "0xXXXXXXXX"
 rand_cmd:
@@ -155,16 +114,15 @@ rand_cmd:
 	ret
 rand_cmd_str db 'rand', 0
 
-; Вывод "pong" на экран
-ping_cmd:
-	mov esi, pong_msg
+; Вывод введённой команды на экран
+echo_cmd:
+	mov esi, user_input
 	mov byte [pos_x], 0
 	mov byte [pos_y], 2
 	call print_str
 	
 	ret
-ping_cmd_str db 'ping', 0
-pong_msg db 'pong', 0
+echo_cmd_str db 'echo', 0
 
 ; Сделать GPF (General protection fault)
 panic_cmd:

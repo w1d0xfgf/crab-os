@@ -7,8 +7,8 @@
 ; Scancode: EBX
 wait_key:
 	movzx ebx, byte [key_queue_top]		; Проверить есть ли в очереди клавиши
-	cmp ebx, 0							; 
-	je wait_key						    ; Если нет, повторить
+	test ebx, ebx						; 
+	jz wait_key						    ; Если нет, повторить
 
     ret
 

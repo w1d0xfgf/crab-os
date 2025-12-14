@@ -1,6 +1,6 @@
 ; Запуск
 startup:
-    ; PRNG
+	; PRNG
 	call get_rtc_time
 	; Первые 2 байта State[0] = 0xMMSS (M -- минуты, S -- секунды)
 	mov word [rng_state], bx	
@@ -138,10 +138,10 @@ input_done:
 	command restart_cmd_str
 	je restart_cmd
 .cmp3:
-	; Команда ping
-	command ping_cmd_str
+	; Команда echo
+	command echo_cmd_str
 	jne .cmp4
-	call ping_cmd
+	call echo_cmd
 	jmp .end
 .cmp4:
 	; Команда rand
@@ -156,6 +156,24 @@ input_done:
 	call help_cmd
 	jmp .end
 .cmp6:
+	; Команда game
+	command game_cmd_str
+	jne .cmp7
+	call game_cmd
+	jmp .end
+.cmp7:
+	; Команда pit
+	command pit_cmd_str
+	jne .cmp8
+	call pit_cmd
+	jmp .end
+.cmp8:
+	; Команда cls
+	command cls_cmd_str
+	jne .cmp9
+	call cls_cmd
+	jmp .end
+.cmp9:
 	; Команда fib
 	command fib_cmd_str
 	jne .fail
