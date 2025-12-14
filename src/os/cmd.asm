@@ -85,16 +85,13 @@ help_cmd:
 help_cmd_str db 'help', 0
 cmd_list_msg:
 	db 'Commands:', 13, 10
-	db 'echo <args> - Print args (NOT WORKING YET!)', 13, 10
-	db '              ', 0xC0, 'Example:', 13, 10
-	db '               > echo Hello', 13, 10
-	db '               Hello', 13, 10
-	db 'fib         - Print the next fibonacci number in hexadecimal', 13, 10
-	db 'game        - Play Pong', 13, 10
-	db 'help        - Show this list', 13, 10
-	db 'rand        - Print a random 32-bit number in hexadecimal', 13, 10
-	db 'pit         - Print PIT ticks in hexadecimal', 13, 10
-	db 'cls         - Clear the screen and re-initialize GUI', 0
+	db 'info  - Print info about the CPU', 13, 10
+	db 'fib   - Print the next fibonacci number in hexadecimal', 13, 10
+	db 'game  - Play Pong', 13, 10
+	db 'help  - Show this list', 13, 10
+	db 'rand  - Print a random 32-bit number in hexadecimal', 13, 10
+	db 'pit   - Print PIT ticks in hexadecimal', 13, 10
+	db 'cls   - Clear the screen and re-initialize GUI', 0
 	
 ; Вывод случайного числа в формате "0xXXXXXXXX"
 rand_cmd:
@@ -114,15 +111,86 @@ rand_cmd:
 	ret
 rand_cmd_str db 'rand', 0
 
-; Вывод введённой команды на экран
-echo_cmd:
-	mov esi, user_input
+; Вывод информации об процессоре на экран
+info_cmd:
+	; Получить строку продавца
+	xor eax, eax
+	cpuid
+
+	; Копировать строку из EBX, EDX, ECX
+	mov esi, vendor_str
+	mov dword [esi], ebx
+	add esi, 4
+
+	mov dword [esi], edx
+	add esi, 4
+
+	mov dword [esi], ecx
+	add esi, 4
+
+	; Печать строки продавца
 	mov byte [pos_x], 0
 	mov byte [pos_y], 2
+	mov esi, vendor_str_msg
 	call print_str
+	mov esi, vendor_str
+	call println_str
+
+	; Получение и печать Stepping ID
+	mov esi, stepping_id_msg
+	call print_str
+	mov eax, 0x01
+	cpuid
+	push ax
+	and al, 0b00001111
+	mov [reg8], al
+	call println_reg8
+
+	; Получение и печать модели
+	mov esi, model_msg
+	call print_str
+	pop ax
+	and al, 0b11110000
+	mov [reg8], al
+	call println_reg8
+
+	; Получение и печать семьи
+	mov esi, family_msg
+	call print_str
+	and ah, 0b00001111
+	mov [reg8], ah
+	call println_reg8
+
+	; Получение информации про FPU и печать
+	mov eax, 1
+	cpuid
+	mov esi, fpu_msg
+	call print_str
+	; Первый бит DL
+	and dl, 0b00000001
+	test dl, dl
+	jnz .fpu_not_present
+.fpu_present:
+	; Вывести fpu_msg + yes_msg если FPU есть
+	mov esi, yes_msg
+	call print_str
+	jmp .fpu_endif
+.fpu_not_present:	
+	; Вывести fpu_msg + no_msg если FPU нет
+	mov esi, no_msg
+	call print_str
+.fpu_endif:
 	
 	ret
-echo_cmd_str db 'echo', 0
+info_cmd_str db 'info', 0
+vendor_str_msg db 'Vendor: ', 0
+vendor_str times 13 db 0
+stepping_id_msg db 'Stepping ID: ', 0
+model_msg db 'Model: ', 0
+family_msg db 'Family: ', 0
+fpu_msg db 'FPU present?: ', 0
+yes_msg db 'Yes', 0
+no_msg db 'No', 0
 
 ; Сделать GPF (General protection fault)
 panic_cmd:

@@ -1,6 +1,14 @@
 	; Скрыть курсор
 	mov ah, 0b00010000
 	call set_cursor
+
+	; Сбросить значения
+	mov byte [p1_paddle_pos], 10
+	mov byte [p2_paddle_pos], 10
+	mov byte [ball_pos_x], 30
+	mov byte [ball_pos_y], 10
+	mov byte [ball_dir], 0
+	mov dword [last_update_ticks], 0
 	
 	; Обновить
 .update:
@@ -200,7 +208,7 @@
 	mov al, [ball_pos_y]
 	mov byte [pos_y], al
 
-	; Символ "○" (код в CP437 это 0x09)
+	; Символ "█" (код в CP437 это 0x09)
 	mov al, 0xFE
 	call print_char
 
@@ -309,7 +317,6 @@
 	mov byte [ball_dir], 2
 .ball_right_collide_done:
 	ret
-
 
 .ball_left_collide:
 	; Если мячик движется вверх

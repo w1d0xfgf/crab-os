@@ -8,22 +8,19 @@ startup:
 	mov word [rng_state + 2], cx
 
     ; Инициализизовать GUI
-	call init_gui
+	call init_gui	
 
 ; Цикл программы
 event_loop:
 	; Обновление GUI
 	call update_gui
 	mov byte [vga_attr], 0x07
-
-    ; Ожидание клавиши
-    call wait_key
 		
 	; Обработка нажатия клавиши
 .handle_key:
 	movzx ebx, byte [key_queue_top]		; Проверить есть ли в очереди клавиши
-	cmp ebx, 0							; 
-	je .skip_key						; Пропустить обработку клавиши если очередь пустая
+	test ebx, ebx						; 
+	jz .skip_key						; Пропустить обработку клавиши если очередь пустая
 	
 	; Scancode
 	dec ebx								; EBX = Индекс верхнего элемента
@@ -38,6 +35,10 @@ event_loop:
 	cmp byte [keys_pressed + 0x36], 1
 	je .shift_pressed
 
+	; Непечатаемые символы
+	cmp al, 0x7F
+	jae .non_printable
+
 	; Если Shift не нажат, обычная таблица Scancode -> ASCII
 	mov al, [scancode_to_ascii + eax]
 	jmp .converted
@@ -45,9 +46,9 @@ event_loop:
 	; Если Shift нажат, другая таблица Scancode -> ASCII
 	mov al, [scancode_to_ascii_shift + eax]
 .converted:
-	; Обработка непечатаемых символов (в таблице они 0)
+	; Непечатаемые символы
 	test al, al
-	jz .non_ascii
+	jz .non_printable
 
 	; Проверить, заполнен ли user_input (user_input_top >= длина - 1)
 	cmp byte [user_input_top], 31
@@ -65,7 +66,7 @@ event_loop:
 	call cursor_to_pos
 	
 	jmp .finished_key
-.non_ascii:
+.non_printable:
 	pop ax
 	
 	; Backspace
@@ -138,10 +139,10 @@ input_done:
 	command restart_cmd_str
 	je restart_cmd
 .cmp3:
-	; Команда echo
-	command echo_cmd_str
+	; Команда info
+	command info_cmd_str
 	jne .cmp4
-	call echo_cmd
+	call info_cmd
 	jmp .end
 .cmp4:
 	; Команда rand

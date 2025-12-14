@@ -102,7 +102,7 @@ scancode_to_ascii:
     db 0
     db 0
     db 0
-	times (0x255 - ($ - scancode_to_ascii)) db 0
+	times (0x80 - ($ - scancode_to_ascii)) db 0
 
 ; Таблица для перевода Scancode (set 1) в ASCII когда нажата клавиша Shift
 ; таблица[сканкод] = ASCII символ
@@ -202,4 +202,4 @@ scancode_to_ascii_shift:
     db 0
     db 0
     db 0
-    times (0x255 - ($ - scancode_to_ascii_shift)) db 0
+    times (0x80 - ($ - scancode_to_ascii_shift)) db 0
