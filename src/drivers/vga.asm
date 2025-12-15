@@ -111,14 +111,17 @@ print_str:
 ;
 ; Меняет: AX, ECX, EDI
 clear_screen:
-	mov ecx, 2000			; Счётчик = 2000 (размер экрана 80x25 символов)
+	mov ecx, 1000			; Счётчик = 1000 (размер экрана 80x25 символов, запись dword за раз)
 	mov edi, VIDEO_MEM		; Адрес VGA текстового буфера
 	
 	mov al, ' '				; Символ
 	mov ah, [vga_attr]		; Атрибут
+	shl eax, 16				; Сдвинуть
+	mov al, ' '				; Символ
+	mov ah, [vga_attr]		; Атрибут
 	
-	; AX -> EDI, EDI += 2, ECX-- до того как ECX = 0
-	rep stosw
+	; EAX -> EDI, EDI += 4, ECX-- до того как ECX = 0
+	rep stosd
 
 	ret
 

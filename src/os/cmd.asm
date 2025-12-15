@@ -85,13 +85,15 @@ help_cmd:
 help_cmd_str db 'help', 0
 cmd_list_msg:
 	db 'Commands:', 13, 10
-	db 'info  - Print info about the CPU', 13, 10
-	db 'fib   - Print the next fibonacci number in hexadecimal', 13, 10
-	db 'game  - Play Pong', 13, 10
-	db 'help  - Show this list', 13, 10
-	db 'rand  - Print a random 32-bit number in hexadecimal', 13, 10
-	db 'pit   - Print PIT ticks in hexadecimal', 13, 10
-	db 'cls   - Clear the screen and re-initialize GUI', 0
+	db 'cls     - Clear the screen and re-initialize GUI', 13, 10
+	db 'fib     - Print the next fibonacci number in hexadecimal', 13, 10
+	db 'game    - Play Pong', 13, 10
+	db 'help    - Show this list', 13, 10
+	db 'info    - Print info about the CPU', 13, 10
+	db 'panic   - Cause a GPF (General Protection Fault)', 13, 10
+	db 'pit     - Print PIT ticks in hexadecimal', 13, 10
+	db 'rand    - Print a random 32-bit number in hexadecimal', 13, 10
+	db 'restart - Restart the computer', 0
 	
 ; Вывод случайного числа в формате "0xXXXXXXXX"
 rand_cmd:

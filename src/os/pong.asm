@@ -3,8 +3,8 @@
 	call set_cursor
 
 	; Сбросить значения
-	mov byte [p1_paddle_pos], 10
-	mov byte [p2_paddle_pos], 10
+	mov byte [p1_paddle_pos], 12
+	mov byte [p2_paddle_pos], 12
 	mov byte [ball_pos_x], 30
 	mov byte [ball_pos_y], 10
 	mov byte [ball_dir], 0
@@ -14,7 +14,7 @@
 .update:
 	mov eax, [system_timer_ticks]
 	sub eax, [last_update_ticks]
-	cmp eax, 80
+	cmp eax, 70
 	jb .skip
 	mov edx, [system_timer_ticks]
 	mov [last_update_ticks], edx
@@ -94,7 +94,7 @@
 
 	; Коллизия мячика с ракеткой игрока 1
 	; Мячик перед ракеткой?
-	cmp byte [ball_pos_x], 2
+	cmp byte [ball_pos_x], 6
 	jne .ball_p1_collision_endif
 	; Мячик не выше ракетки?
 	mov al, [p1_paddle_pos]
@@ -111,7 +111,7 @@
 
 	; Коллизия мячика с ракеткой игрока 2
 	; Мячик перед ракеткой?
-	cmp byte [ball_pos_x], 77
+	cmp byte [ball_pos_x], 73
 	jne .ball_p2_collision_endif
 	; Мячик не выше ракетки?
 	mov al, [p2_paddle_pos]
@@ -157,7 +157,7 @@
 	; Отрисовать ракетку игрока 1
 
 	; Позиция
-	mov byte [pos_x], 1
+	mov byte [pos_x], 5
 	mov al, [p1_paddle_pos]
 	mov byte [pos_y], al
 
@@ -179,7 +179,7 @@
 	; Отрисовать ракетку игрока 2
 
 	; Позиция
-	mov byte [pos_x], 78
+	mov byte [pos_x], 74
 	mov al, [p2_paddle_pos]
 	mov byte [pos_y], al
 
