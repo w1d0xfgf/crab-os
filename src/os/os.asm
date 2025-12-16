@@ -175,6 +175,12 @@ input_done:
 	call cls_cmd
 	jmp .end
 .cmp9:
+	; Команда memv
+	command memv_cmd_str
+	jne .cmp10
+	call memv_cmd
+	jmp .end
+.cmp10:
 	; Команда fib
 	command fib_cmd_str
 	jne .fail
