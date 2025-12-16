@@ -1,14 +1,15 @@
 ; Запуск
 startup:
-	; PRNG
-	call get_rtc_time
-	; Первые 2 байта State[0] = 0xMMSS (M -- минуты, S -- секунды)
-	mov word [rng_state], bx	
-	; Вторые 2 байта State[0] = 0xDDHH (D -- дни, H -- часы)
-	mov word [rng_state + 2], cx
-
     ; Инициализизовать GUI
-	call init_gui	
+	call init_gui
+
+	; Сдлеать state PRNG из времени
+	call get_rtc_time
+	; Байты EAX: Секунды, Минуты, Часы, Дни
+	mov ax, bx
+	shl eax, 16
+	mov ax, cx
+	call seed_rng
 
 ; Цикл программы
 event_loop:
