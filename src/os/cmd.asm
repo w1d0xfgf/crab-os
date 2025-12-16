@@ -24,11 +24,15 @@ pit_cmd_str db 'pit', 0
 game_cmd:
 	%include "src/os/pong.asm"
 game_cmd_str db 'game', 0
-p1_paddle_pos db 10		; Позиция ракетки игрока 1
-p2_paddle_pos db 10		; Позиция ракетки игрока 2
-ball_pos_x db 30		; Позиция мячика
-ball_pos_y db 10		;
-ball_dir db 0 			; Направление: 0 - влево вверх, 1 - вправо вверх, 2 - влево вниз, 3 - вправо вниз
+p1_paddle_pos db 0			; Позиция ракетки игрока 1
+p2_paddle_pos db 0			; Позиция ракетки игрока 2
+p1_paddle_pos_prev db 0		; Предыдущая позиция ракетки игрока 1
+p2_paddle_pos_prev db 0		; Предыдущая позиция ракетки игрока 2
+ball_pos_x db 0				; Позиция мячика
+ball_pos_y db 0				;
+ball_pos_x_prev db 0		; Предыдущая позиция мячика
+ball_pos_y_prev db 0		;
+ball_dir db 0 				; Направление: 0 - влево вверх, 1 - вправо вверх, 2 - влево вниз, 3 - вправо вниз
 last_update_ticks dd 0
 p1_won_msg db 'Player 1 won!', 0
 p2_won_msg db 'Player 2 won!', 0

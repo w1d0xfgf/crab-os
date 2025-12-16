@@ -5,22 +5,27 @@
 	; Сбросить значения
 	mov byte [p1_paddle_pos], 12
 	mov byte [p2_paddle_pos], 12
+	mov byte [p1_paddle_pos_prev], 12
+	mov byte [p2_paddle_pos_prev], 12
 	mov byte [ball_pos_x], 30
 	mov byte [ball_pos_y], 10
+	mov byte [ball_pos_x_prev], 30
+	mov byte [ball_pos_y_prev], 10
 	mov byte [ball_dir], 0
 	mov dword [last_update_ticks], 0
+
+	; Очистить экран
+	call clear_screen
 	
-	; Обновить
+	; Цикл обновлений
 .update:
+	; Подождать 70 тиков PIT
 	mov eax, [system_timer_ticks]
 	sub eax, [last_update_ticks]
 	cmp eax, 70
 	jb .skip
 	mov edx, [system_timer_ticks]
 	mov [last_update_ticks], edx
-
-	; Очистить экран
-	call clear_screen
 
 	; Очистить очередь нажатий
 	mov byte [key_queue_top], 0
@@ -154,6 +159,28 @@
 	call .ball_left_collide
 .ball_left_collision_endif:
 
+	; Затереть предыдущую отрисовку ракетки игрока 1
+
+	; Позиция
+	mov byte [pos_x], 5
+	mov al, [p1_paddle_pos_prev]
+	mov byte [pos_y], al
+
+	; Затереть символом пробела
+	mov al, ' '
+
+	; Печать верхнего символа
+	dec byte [pos_y]
+	call print_char
+	dec byte [pos_x]
+	; Печать среднего символа
+	inc byte [pos_y]
+	call print_char
+	dec byte [pos_x]
+	; Печать нижнего символа
+	inc byte [pos_y]
+	call print_char
+
 	; Отрисовать ракетку игрока 1
 
 	; Позиция
@@ -163,6 +190,28 @@
 
 	; Символ "█" (код в CP437 это 0xDB)
 	mov al, 0xDB
+
+	; Печать верхнего символа
+	dec byte [pos_y]
+	call print_char
+	dec byte [pos_x]
+	; Печать среднего символа
+	inc byte [pos_y]
+	call print_char
+	dec byte [pos_x]
+	; Печать нижнего символа
+	inc byte [pos_y]
+	call print_char
+
+	; Затереть предыдущую отрисовку ракетки игрока 2
+
+	; Позиция
+	mov byte [pos_x], 74
+	mov al, [p2_paddle_pos_prev]
+	mov byte [pos_y], al
+
+	; Затереть символом пробела
+	mov al, ' '
 
 	; Печать верхнего символа
 	dec byte [pos_y]
@@ -198,6 +247,20 @@
 	inc byte [pos_y]
 	call print_char
 
+	; Затереть предыдущую отрисовку мячика
+
+	; Позиция по X
+	mov al, [ball_pos_x_prev]
+	mov byte [pos_x], al
+	
+	; Позиция по Y
+	mov al, [ball_pos_y_prev]
+	mov byte [pos_y], al
+
+	; Затереть символом пробела
+	mov al, ' '
+	call print_char
+
 	; Отрисовать мячик
 
 	; Позиция по X
@@ -219,6 +282,18 @@
 	; Проверить выиграл ли игрок 2
 	cmp byte [ball_pos_x], 0
 	je .end_p2
+
+	; Обновить предыдущие позиции
+
+	mov al, [ball_pos_x]
+	mov [ball_pos_x_prev], al
+	mov al, [ball_pos_y]
+	mov [ball_pos_y_prev], al
+
+	mov al, [p1_paddle_pos]
+	mov [p1_paddle_pos_prev], al
+	mov al, [p2_paddle_pos]
+	mov [p2_paddle_pos_prev], al
 .skip:
 	jmp .update
 
@@ -236,6 +311,9 @@
 	mov esi, p2_won_msg
 	call print_str
 .end:
+	; Очистить очередь нажатий
+	mov byte [key_queue_top], 0
+
 	; Вывести key_press_msg на экран
 	mov byte [pos_x], 28
 	mov byte [pos_y], 10
