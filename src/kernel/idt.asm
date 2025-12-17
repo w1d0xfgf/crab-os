@@ -193,19 +193,7 @@ page_fault_msg: db "Page Fault", 0
 
 ; ------------------------------------------------------------------
 
-; ISR PIT прерывания
-system_timer:
-	push eax
-	
-    inc dword [system_timer_ticks]
-    mov al, PIC_EOI
-    out PIC1, al
-	
-    pop eax
-	
-    iret
-	
-system_timer_ticks dd 0	; Количество тиков PIT
+%include "src/drivers/pit.asm"
 
 ; ------------------------------------------------------------------
 

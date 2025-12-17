@@ -32,7 +32,7 @@ init_gui:
 	ret
 ; GUI ОС
 os_gui_init:
-	db ' CrabOS v0.1.3 | - - - - - - - - - - - - - - - - - - - - - -|                   ', 0
+	db ' CrabOS v0.1.4 ', 0xB3, '                                            ', 0xB3, '                   ', 0
 
 ; Обновляет GUI времени и даты
 ;

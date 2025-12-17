@@ -2,6 +2,21 @@
 ; Команды в консоли
 ; ------------------------------------------------------------------
 
+beep_cmd:
+	; Включить звук с частотой 1500 Гц
+	mov ecx, 1500
+	call play_sound
+
+	; Подождать 100 тиков
+	mov edx, 100
+	call sleep_ticks
+
+	; Выключить звук
+	call stop_sound
+	
+	ret
+beep_cmd_str db 'beep', 0
+
 ; Просмотреть память
 memv_cmd:
 	; Скрыть курсор
@@ -75,28 +90,34 @@ memv_cmd:
 
 	; Обработать нажатие клавиши
 .check_key:
-	; Ждать нажатия и очистить очередь
+	; Ждать нажатия
 	call wait_key
-	mov byte [key_queue_top], 0
+	
+	; Scancode
+	movzx ebx, byte [key_queue_top]
+	dec ebx
+	mov al, [key_queue + ebx]
+	dec byte [key_queue_top]
 
-	; W/U 
-	cmp byte [key_queue], 0x11
+	; W/U
+	cmp al, 0x11
 	je .forward
-	cmp byte [key_queue], 0x16
+	cmp al, 0x16
 	je .fast_forward
 
 	; S/D
-	cmp byte [key_queue], 0x1F
+	cmp al, 0x1F
 	je .backward
-	cmp byte [key_queue], 0x20
+	cmp al, 0x20
 	je .fast_backward
 
 	; Escape
-	cmp byte [key_queue], 0x01
+	cmp al, 0x01
 	je .exit
 
 	; Заного
 	jmp .check_key
+
 .forward:
 	add dword [memv_location], 64
 	jmp .reload
@@ -210,6 +231,7 @@ help_cmd:
 help_cmd_str db 'help', 0
 cmd_list_msg:
 	db 'Commands:', 13, 10
+	db 'beep    - Make a beep', 13, 10
 	db 'cls     - Clear the screen and re-initialize GUI', 13, 10
 	db 'fib     - Print the next fibonacci number in hexadecimal', 13, 10
 	db 'game    - Play Pong', 13, 10

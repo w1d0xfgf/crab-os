@@ -27,6 +27,10 @@
 	mov edx, [system_timer_ticks]
 	mov [last_update_ticks], edx
 
+	; Если нажат Escape выйти
+	cmp byte [keys_pressed + 0x01], 1
+	je .return
+
 	; Очистить очередь нажатий
 	mov byte [key_queue_top], 0
 
@@ -322,8 +326,8 @@
 
 	; Подождать нажатие клавиши и после нажатия очистить очередь
 	call wait_key
-	mov byte [key_queue_top], 0
-
+	mov byte [key_queue_top], 0	
+.return:
 	; Вернуть курсор
 	mov ah, 0b00000000
 	call set_cursor

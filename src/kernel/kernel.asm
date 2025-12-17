@@ -52,6 +52,9 @@ done:
 ; Драйвер Real Time Clock
 %include "src/drivers/rtc.asm"
 
+; Драйвер PC Speaker
+%include "src/drivers/speaker.asm"
+
 ; Код для включения A20 Line
 %include "src/kernel/a20.asm"
 

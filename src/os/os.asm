@@ -117,10 +117,12 @@ event_loop:
 input_done:
 	; Сбросить GUI
 	call init_gui
+	call update_gui
+	mov byte [vga_attr], 0x07
 
 	; Если ввод пустой, пропустить обработку
-	cmp byte [user_input], 0	; Первый байт в пустой строке -- NULL
-	je .ret
+	cmp byte [user_input_top], 0
+	je .end
 
 	; Обрезать лишние пробелы, \n и \r
 	mov esi, user_input
@@ -182,6 +184,12 @@ input_done:
 	call memv_cmd
 	jmp .end
 .cmp10:
+	; Команда beep
+	command beep_cmd_str
+	jne .cmp11
+	call beep_cmd
+	jmp .end
+.cmp11:
 	; Команда fib
 	command fib_cmd_str
 	jne .fail
