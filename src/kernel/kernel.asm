@@ -26,6 +26,8 @@ protected_start:
 	
 	; IDT
 	call init_idt_and_pic
+
+	call mouseinit
 	
     sti ; Включить прерывания
 	
@@ -57,6 +59,9 @@ done:
 
 ; Код для включения A20 Line
 %include "src/kernel/a20.asm"
+
+; мышка
+%include "src/drivers/mouse.asm"
 
 ; ------------------------------------------------------------------
 

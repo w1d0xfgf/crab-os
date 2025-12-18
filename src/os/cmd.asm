@@ -2,6 +2,23 @@
 ; Команды в консоли
 ; ------------------------------------------------------------------
 
+; Версия ОС
+version_cmd:
+	mov esi, version_str
+	mov byte [pos_x], 0
+	mov byte [pos_y], 2
+	call print_str
+
+	ret
+version_cmd_str db 'version', 0
+version_str db 'v0.1.5', 0
+
+; Тест мышки
+mouse_cmd:
+	%include "src/os/cmd/mouse.asm"
+mouse_cmd_str db 'mouse', 0
+
+; Бип
 beep_cmd:
 	; Включить звук с частотой 1500 Гц
 	mov ecx, 1500
@@ -19,130 +36,8 @@ beep_cmd_str db 'beep', 0
 
 ; Просмотреть память
 memv_cmd:
-	; Скрыть курсор
-	mov ah, 0b00010000
-	call set_cursor
-
-	; Изначальная позиция это метка protected_start
-	mov ebx, protected_start
-	mov dword [memv_location], ebx
-.reload:
-	; Очистить экран и сбросить позицию
-	mov byte [pos_x], 0
-	mov byte [pos_y], 0
-	call clear_screen
-
-	; Напечатать memv_help
-	mov esi, memv_help
-	call println_str
-
-	; Напечатать adress_msg
-	mov esi, adress_msg
-	call print_str
-
-	; Напечатать адрес
-	mov esi, dword [memv_location]
-	mov [reg32], esi
-	call print_reg32
-
-	; Следующая строка
-	inc byte [pos_y]
-	mov byte [pos_x], 0
-
-	; Переместить адрес в ESI
-	mov esi, dword [memv_location]
-
-	; 16 итераций
-	mov ecx, 16
-.loop:
-	; Сохранить ECX
-	push ecx
-	
-	; 64 итерации
-	mov ecx, 64
-.loop2:
-	; Загрузить символ в AL из ESI
-	lodsb
-	mov [reg8], al
-
-	; Созранить регистры и напечатать символ
-	push esi
-	push ecx
-	call print_char
-	pop ecx
-	pop esi
-	
-	; Проверить, конец ли цикла
-	dec ecx
-	jnz .loop2
-
-
-	; Восстановить ECX
-	pop ecx
-
-	; Следующий ряд
-	inc byte [pos_y]
-	mov byte [pos_x], 0
-
-	; Проверить, конец ли цикла
-	dec ecx
-	jnz .loop
-
-	; Обработать нажатие клавиши
-.check_key:
-	; Ждать нажатия
-	call wait_key
-	
-	; Scancode
-	movzx ebx, byte [key_queue_top]
-	dec ebx
-	mov al, [key_queue + ebx]
-	dec byte [key_queue_top]
-
-	; W/U
-	cmp al, 0x11
-	je .forward
-	cmp al, 0x16
-	je .fast_forward
-
-	; S/D
-	cmp al, 0x1F
-	je .backward
-	cmp al, 0x20
-	je .fast_backward
-
-	; Escape
-	cmp al, 0x01
-	je .exit
-
-	; Заного
-	jmp .check_key
-
-.forward:
-	add dword [memv_location], 64
-	jmp .reload
-.fast_forward:
-	add dword [memv_location], 4096
-	jmp .reload
-.backward:
-	sub dword [memv_location], 64
-	jmp .reload
-.fast_backward:
-	sub dword [memv_location], 4096
-	jmp .reload
-.exit:
-	; Вернуть курсор
-	mov ah, 0b00000000
-	call set_cursor
-
-	; Вернуть GUI
-	call init_gui
-
-	ret
+	%include "src/os/cmd/memv.asm"
 memv_cmd_str db 'memv', 0
-memv_location dd 0
-memv_help db 'W/S: Up/Down  U/D: Fast Up/Down', 0
-adress_msg db 'Adress: ', 0
 
 ; Очистить экран
 cls_cmd:
@@ -163,9 +58,9 @@ pit_cmd:
 pit_cmd_str db 'pit', 0
 
 ; Игра Pong
-game_cmd:
+pong_cmd:
 	%include "src/os/pong.asm"
-game_cmd_str db 'game', 0
+pong_cmd_str db 'pong', 0
 p1_paddle_pos db 0			; Позиция ракетки игрока 1
 p2_paddle_pos db 0			; Позиция ракетки игрока 2
 p1_paddle_pos_prev db 0		; Предыдущая позиция ракетки игрока 1
@@ -174,7 +69,7 @@ ball_pos_x db 0				; Позиция мячика
 ball_pos_y db 0				;
 ball_pos_x_prev db 0		; Предыдущая позиция мячика
 ball_pos_y_prev db 0		;
-ball_dir db 0 				; Направление: 0 - влево вверх, 1 - вправо вверх, 2 - влево вниз, 3 - вправо вниз
+ball_dir db 0 				; Направление мячика: 0 - влево вверх, 1 - вправо вверх, 2 - влево вниз, 3 - вправо вниз
 last_update_ticks dd 0
 p1_won_msg db 'Player 1 won!', 0
 p2_won_msg db 'Player 2 won!', 0
@@ -234,10 +129,11 @@ cmd_list_msg:
 	db 'beep    - Make a beep', 13, 10
 	db 'cls     - Clear the screen and re-initialize GUI', 13, 10
 	db 'fib     - Print the next fibonacci number in hexadecimal', 13, 10
-	db 'game    - Play Pong', 13, 10
+	db 'pong    - Play Pong', 13, 10
 	db 'help    - Show this list', 13, 10
 	db 'info    - Print info about the CPU', 13, 10
 	db 'memv    - View memory', 13, 10
+	db 'mouse   - For testing', 13, 10
 	db 'panic   - Cause a GPF (General Protection Fault)', 13, 10
 	db 'pit     - Print PIT ticks in hexadecimal', 13, 10
 	db 'rand    - Print a random 32-bit number in hexadecimal', 13, 10

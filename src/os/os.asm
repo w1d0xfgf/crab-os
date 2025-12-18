@@ -16,12 +16,13 @@ event_loop:
 	; Обновление GUI
 	call update_gui
 	mov byte [vga_attr], 0x07
-		
+	
 	; Обработка нажатия клавиши
 .handle_key:
-	movzx ebx, byte [key_queue_top]		; Проверить есть ли в очереди клавиши
-	test ebx, ebx						; 
-	jz .skip_key						; Пропустить обработку клавиши если очередь пустая
+	; Проверить есть ли в очереди клавиши, если нет, не обрабатывать
+	movzx ebx, byte [key_queue_top]		
+	test ebx, ebx
+	jz .skip_key
 	
 	; Scancode
 	dec ebx								; EBX = Индекс верхнего элемента
@@ -62,7 +63,7 @@ event_loop:
 	
 	; Печать
 	call print_char
-	
+
 	; Обновить позицию курсора
 	call cursor_to_pos
 	
@@ -79,6 +80,9 @@ event_loop:
 	jne .finished_key
 	call input_done
 .finished_key:
+	cmp byte [key_queue_top], 0
+	je .skip_key
+
 	; Убрать элемент после того как он был обработан
 	dec byte [key_queue_top]	
 	jmp .skip_key
@@ -99,9 +103,9 @@ event_loop:
 	mov byte [user_input + ebx], 0
 	dec byte [user_input_top]
 
-	jmp .finished_key 
+	jmp .finished_key
 .skip_key:
-    jmp event_loop	
+    jmp event_loop
 	
 ; ------------------------------------------------------------------
 
@@ -160,10 +164,10 @@ input_done:
 	call help_cmd
 	jmp .end
 .cmp6:
-	; Команда game
-	command game_cmd_str
+	; Команда pong
+	command pong_cmd_str
 	jne .cmp7
-	call game_cmd
+	call pong_cmd
 	jmp .end
 .cmp7:
 	; Команда pit
@@ -190,6 +194,18 @@ input_done:
 	call beep_cmd
 	jmp .end
 .cmp11:
+	; Команда mouse
+	command mouse_cmd_str
+	jne .cmp12
+	call mouse_cmd
+	jmp .end
+.cmp12:
+	; Команда version
+	command version_cmd_str
+	jne .cmp13
+	call version_cmd
+	jmp .end
+.cmp13:
 	; Команда fib
 	command fib_cmd_str
 	jne .fail

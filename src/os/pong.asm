@@ -275,7 +275,7 @@
 	mov al, [ball_pos_y]
 	mov byte [pos_y], al
 
-	; Символ "█" (код в CP437 это 0x09)
+	; Символ маленького квадрата (код в CP437 это 0xFE)
 	mov al, 0xFE
 	call print_char
 
