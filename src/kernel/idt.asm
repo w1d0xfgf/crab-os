@@ -176,6 +176,11 @@ init_idt_and_pic:
 	mov eax, page_fault
 	call set_idt_entry
 
+	; System Call (индекс 0x80)
+	mov ebx, 0x80
+	mov eax, syscall
+	call set_idt_entry
+
 	; Загрузка IDT
 	lea eax, [idt_descriptor]
 	lidt [eax]
@@ -187,16 +192,61 @@ init_idt_and_pic:
 ; ------------------------------------------------------------------
 
 div_err: isr div_err_msg, 0x1F
-div_err_msg: db "Division error", 0
+div_err_msg: db 'Division error', 0
 
 nmi: isr nmi_msg, 0x4F
-nmi_msg: db "Non-maskable Interrupt", 0
+nmi_msg: db 'Non-maskable Interrupt', 0
 
 gpf: isr gpf_msg, 0x1F
-gpf_msg: db "General Protection Fault", 0
+gpf_msg: db 'General Protection Fault', 0
 
 page_fault: isr page_fault_msg, 0x1F
-page_fault_msg: db "Page Fault", 0
+page_fault_msg: db 'Page Fault', 0
+	
+; ------------------------------------------------------------------
+
+; Системный вызов
+syscall:
+	pushad
+
+	; Печать
+	cmp eax, 0
+	je .print
+	cmp eax, 1
+	je .println
+	cmp eax, 2
+	je .print_al
+	cmp eax, 3
+	je .print_eax
+	cmp eax, 4
+	je .println_al
+	cmp eax, 5
+	je .println_eax
+.print:
+	call print_str
+	jmp .done
+.println:
+	call println_str
+	jmp .done
+.print_al:
+	mov [reg8], al
+	call print_reg8
+	jmp .done
+.print_eax:
+	mov [reg32], eax
+	call print_reg32
+	jmp .done
+.println_al:
+	mov [reg8], al
+	call println_reg8
+	jmp .done
+.println_eax:
+	mov [reg32], eax
+	call println_reg32
+	jmp .done
+.done:
+	popad
+	iret
 
 ; ------------------------------------------------------------------
 
@@ -224,6 +274,7 @@ keyboard_stub:
 	; EOI для Master PIC
 	mov al, PIC_EOI
 	out PIC_EOI, al
+
 	iret
 
 mouse_stub:
@@ -243,6 +294,7 @@ mouse_stub:
 	mov al, PIC_EOI
 	out 0xA0, al	; EOI для Slave PIC
 	out 0x20, al	; EOI для Master PIC
+
 	iret
 
 %include "src/drivers/keyboard.asm"

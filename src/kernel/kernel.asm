@@ -57,11 +57,11 @@ done:
 ; Драйвер PC Speaker
 %include "src/drivers/speaker.asm"
 
+; Драйвер мышки
+%include "src/drivers/mouse.asm"
+
 ; Код для включения A20 Line
 %include "src/kernel/a20.asm"
-
-; мышка
-%include "src/drivers/mouse.asm"
 
 ; ------------------------------------------------------------------
 
