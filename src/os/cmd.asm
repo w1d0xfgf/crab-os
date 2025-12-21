@@ -59,7 +59,7 @@ pit_cmd_str db 'pit', 0
 
 ; Игра Pong
 pong_cmd:
-	%include "src/os/pong.asm"
+	%include "src/os/cmd/pong.asm"
 pong_cmd_str db 'pong', 0
 p1_paddle_pos db 0			; Позиция ракетки игрока 1
 p2_paddle_pos db 0			; Позиция ракетки игрока 2
@@ -248,15 +248,15 @@ panic_cmd_str db 'panic', 0
 
 ; Перезапустить компьютер
 restart_cmd:
-    cli	; Выключить прерывания
+	cli	; Выключить прерывания
 .wait_kbc:
-    in al, 0x64		; Статусный порт i8042
-    test al, 0x02	; Входной буфер занят?
-    jnz .wait_kbc	; Ожидание
+	in al, 0x64		; Статусный порт i8042
+	test al, 0x02	; Входной буфер занят?
+	jnz .wait_kbc	; Ожидание
 
 	; Перезагрузка (0xFE в порт 0x64)
-    mov al, 0xFE	
-    out 0x64, al
+	mov al, 0xFE	
+	out 0x64, al
 	
 	; Если перезагрузка не сработала вывести failed_restart_msg на экран
 	mov byte [vga_attr], 0x1F

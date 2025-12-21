@@ -1,6 +1,6 @@
 ; Запуск
 startup:
-    ; Инициализизовать GUI
+	; Инициализизовать GUI
 	call init_gui
 
 	; Сдлеать state PRNG из времени
@@ -107,7 +107,7 @@ event_loop:
 
 	jmp .finished_key
 .skip_key:
-    jmp event_loop
+	jmp event_loop
 	
 ; ------------------------------------------------------------------
 

@@ -10,7 +10,7 @@ wait_key:
 	test ebx, ebx						; 
 	jz wait_key						    ; Если нет, повторить
 
-    ret
+	ret
 
 ; Хендлер клавиатуры
 keyboard_handler:
@@ -19,19 +19,19 @@ keyboard_handler:
 	movzx ebx, al
 	
 	; Проверка на E0
-    ; Если байт от клавиатуры 0xE0, значит код расширенный (следующий байт это код)
+	; Если байт от клавиатуры 0xE0, значит код расширенный (следующий байт это код)
 	cmp al, 0xE0
 	je .prefix_E0
 
-    ; Break?
+	; Break?
 	test al, 0x80
 	jnz .key_release
 .key_press:
-    ; Обычная клавиша
+	; Обычная клавиша
 	cmp byte [prev_E0], 1
 	jne .store_normal_press
 	
-    ; Расширенная клавиша
+	; Расширенная клавиша
 	mov byte [prev_E0], 0
 	or bl, 0x80
 .store_normal_press:

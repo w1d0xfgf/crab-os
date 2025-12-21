@@ -19,16 +19,16 @@ println_str:
 ;
 ; Меняет: EAX, EBX, ECX, ESI, EDI
 print_reg32:
-    ; Конвертация
+	; Конвертация
 	mov edi, out_str_32
-    mov eax, [reg32]
+	mov eax, [reg32]
 	call hex_str_from_eax
 	
 	; Печать
-    mov esi, out_str_32
-    call print_str	
+	mov esi, out_str_32
+	call print_str	
 	
-    ret
+	ret
 reg32 dd 0
 out_str_32 db '00000000', 0
 
@@ -53,12 +53,12 @@ println_reg32:
 print_reg8:
 	; Конвертация
 	mov edi, out_str_8
-    mov al, byte [reg8]
+	mov al, byte [reg8]
 	call hex_str_from_al
 	
 	; Печать
-    mov esi, out_str_8
-    call print_str			
+	mov esi, out_str_8
+	call print_str			
 	
 	ret
 reg8 db 0
@@ -76,7 +76,3 @@ println_reg8:
 	inc byte [pos_y]	; Следующая линия
 	
 	ret
-	
-; ------------------------------------------------------------------
-
-hex_str db '0123456789ABCDEF'

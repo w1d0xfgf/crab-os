@@ -17,7 +17,7 @@ get_pos_offset:
 	add ecx, eax			; Добавить смещение по Y
 	
 	movzx eax, byte [pos_x] ; EAX = pos_x
-    add ecx, eax			; Добавить смещение по X
+	add ecx, eax			; Добавить смещение по X
 	
 	ret
 	
@@ -60,9 +60,9 @@ print_char:
 	pop ax ; Вернуть символ
 
 	; Запись в VGA текстовый буфер
-    mov [edi], al 			; Записать символ
-    mov bl, [vga_attr]      ; Загрузить атрибут
-    mov [edi + 1], bl       ; Записать его
+	mov [edi], al 			; Записать символ
+	mov bl, [vga_attr]      ; Загрузить атрибут
+	mov [edi + 1], bl       ; Записать его
 	inc byte [pos_x]		; Следующая позиция на экране
 	
 	ret
@@ -78,29 +78,29 @@ print_str:
 	
 	mov al, [esi] 				; Загрузка символа
 	
-    cmp al, 0 					; Код 0 - NULL terminator
-    je .done  					; Завершить
+	cmp al, 0 					; Код 0 - NULL terminator
+	je .done  					; Завершить
 	cmp al, 13					; Код 13 - \r
-    je .carriage				; Возвращение каретки
-    cmp al, 10					; Код 10 - \n
-    je .newline					; Новая линия
+	je .carriage				; Возвращение каретки
+	cmp al, 10					; Код 10 - \n
+	je .newline					; Новая линия
 	
 	; Запись в VGA тектовый буфер
-    mov [edi], al 				; Записать символ
-    mov bl, [vga_attr]          ; Загрузить атрибут
-    mov [edi + 1], bl           ; Записать его
+	mov [edi], al 				; Записать символ
+	mov bl, [vga_attr]          ; Загрузить атрибут
+	mov [edi + 1], bl           ; Записать его
 
 	; Следующая итерация
 	inc byte [pos_x]
 .next_iter:
-    inc esi
-    jmp print_str 
+	inc esi
+	jmp print_str 
 .done:
 	ret
 	
 .newline:
 	inc byte [pos_y] 		; Новая линия	
-    jmp .next_iter
+	jmp .next_iter
 .carriage:
 	mov byte [pos_x], 0 	; Возврат каретки
 	jmp .next_iter
@@ -154,25 +154,25 @@ clear_line:
 ; Меняет: AL, DX, ECX
 cursor_to_pos:
 	; Получить смещение в символах
-    call get_pos_offset
+	call get_pos_offset
 	
-    ; Записать low byte
-    mov dx, 0x03D4
-    mov al, 0x0F
-    out dx, al
-    mov dx, 0x03D5
-    mov al, cl
-    out dx, al
+	; Записать low byte
+	mov dx, 0x03D4
+	mov al, 0x0F
+	out dx, al
+	mov dx, 0x03D5
+	mov al, cl
+	out dx, al
 
-    ; Записать high byte
-    mov dx, 0x03D4
-    mov al, 0x0E
-    out dx, al
-    mov dx, 0x03D5
-    mov al, ch
-    out dx, al
+	; Записать high byte
+	mov dx, 0x03D4
+	mov al, 0x0E
+	out dx, al
+	mov dx, 0x03D5
+	mov al, ch
+	out dx, al
 
-    ret
+	ret
 	
 ; ------------------------------------------------------------------
 	

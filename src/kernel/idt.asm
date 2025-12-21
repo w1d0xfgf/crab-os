@@ -87,6 +87,40 @@ set_idt_entry:
 	popad			; Восстановить регистры
 	
 	ret
+
+; Установить одну запись IDT для User mode
+;
+; Индекс: EBX
+; Смещение: EAX
+set_idt_entry_user:
+	pushad			; Сохранить регистры
+	
+	mov ecx, ebx	; ECX = индекс * 8, поскольку каждая запись в IDT 8 байт
+	shl ecx, 3		;
+	lea edi, [idt]
+	add edi, ecx	; Добавить к адресу IDT смещение ECX
+
+	; dword low: offset_low (16) | (CODE_SEL << 16)
+	mov edx, eax
+	and edx, 0xFFFF	; Маска: сохранить только первые 16 битов
+	mov ebp, CODE_SEL
+	shl ebp, 16
+	or edx, ebp
+	mov [edi], edx
+
+	; dword high: (zero_byte | (type_attr<<8) | (offset_high<<16))
+	mov edx, eax
+	shr edx, 16		; Сместить EDX на 16 битов
+	and edx, 0xFFFF	; offset_high
+	shl edx, 16		; offset_high в 16..31
+	mov ebp, 0xEE
+	shl ebp, 8		; type_attr в 8..15
+	or edx, ebp
+	mov [edi + 4], edx
+
+	popad			; Восстановить регистры
+	
+	ret
 	
 ; ------------------------------------------------------------------
 
@@ -135,7 +169,6 @@ init_idt_and_pic:
 	; Настройка PIT (Programmable Interval Timer)
 	mov al, 0b00110100
 	out 0x43, al
-
 	mov ax, 1193182 / PIT_FREQ	; Делитель = 1193182 / Частота в Гц
 	out 0x40, al				; Нижний байт
 	mov al, ah					; Нельзя прямо вывести AH, поэтому перенос AH -> AL
@@ -179,7 +212,7 @@ init_idt_and_pic:
 	; System Call (индекс 0x80)
 	mov ebx, 0x80
 	mov eax, syscall
-	call set_idt_entry
+	call set_idt_entry_user
 
 	; Загрузка IDT
 	lea eax, [idt_descriptor]
@@ -222,6 +255,16 @@ syscall:
 	je .println_al
 	cmp eax, 5
 	je .println_eax
+
+	; Возврат в ядро
+	cmp eax, 6
+	je .kernel_ret
+
+	; Позиция
+	cmp eax, 7
+	je .set_pos
+
+	jmp .done
 .print:
 	call print_str
 	jmp .done
@@ -244,9 +287,18 @@ syscall:
 	mov [reg32], eax
 	call println_reg32
 	jmp .done
+.kernel_ret:
+	jmp [kernel_ret_addr]
+.set_pos:
+	mov byte [pos_x], dl
+	mov byte [pos_y], dh
+	jmp .done
 .done:
 	popad
 	iret
+
+; Адрес куда будет возврат из User Mode
+kernel_ret_addr dd 0
 
 ; ------------------------------------------------------------------
 
@@ -255,9 +307,9 @@ syscall:
 
 ; ------------------------------------------------------------------
 
-; Keyboard ISR stub, handler
-; Стуб сохраняет регистры, вызывает обработчик, посылает EOI и iret
+; ISR клавиатуры
 keyboard_stub:
+	; Сохранить регистры
 	pusha
 	push ds
 	push es
@@ -265,8 +317,10 @@ keyboard_stub:
 	mov ds, ax
 	mov es, ax
 
+	; Вызвать хендлер
 	call keyboard_handler
 
+	; Восстановить регистры
 	pop es
 	pop ds
 	popa
@@ -277,7 +331,9 @@ keyboard_stub:
 
 	iret
 
+; ISR мыши
 mouse_stub:
+	; Сохранить регистры
 	pusha
 	push ds
 	push es
@@ -285,8 +341,10 @@ mouse_stub:
 	mov ds, ax
 	mov es, ax
 
+	; Вызвать хендлер
 	call mousehandle
 
+	; Восстановить регистры
 	pop es
 	pop ds
 	popa

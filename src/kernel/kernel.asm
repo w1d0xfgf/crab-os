@@ -14,22 +14,48 @@ bits 32
 
 ; Стартовая точка ядра
 protected_start:
-    mov ax, DATA_SEL
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
+	; TSS
+	mov dword [tss32 + 4], stack_top
+	mov word  [tss32 + 8], DATA_SEL
+
+	mov eax, tss32
+	mov ecx, tss_end - tss32 - 1
+	mov edi, gdt_start + 5*8
+
+	mov word [edi+0], cx
+
+	mov word [edi+2], ax
+	shr eax, 16
+	mov byte [edi+4], al
+
+	mov byte [edi+5], 10001001b
+
+	shr ecx, 16
+	mov byte [edi+6], cl
+
+	shr eax, 8
+	mov byte [edi+7], al
+
+	mov ax, TSS_SEL
+	ltr ax
+
+	; Сегменты
+	mov ax, DATA_SEL
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
 	
 	; Стек
-    mov ss, ax
-    mov esp, stack_top
+	mov ss, ax
+	mov esp, stack_top
 	
 	; IDT
 	call init_idt_and_pic
 
 	call mouseinit
 	
-    sti ; Включить прерывания
+	sti ; Включить прерывания
 	
 	; Включить A20 Line (доступ к >1МБ ОЗУ)
 	call enable_A20
@@ -60,7 +86,7 @@ done:
 ; Драйвер мышки
 %include "src/drivers/mouse.asm"
 
-; Код для включения A20 Line
+; A20 Line
 %include "src/kernel/a20.asm"
 
 ; ------------------------------------------------------------------
@@ -70,6 +96,30 @@ done:
 
 ; Функции для работы со строками
 %include "src/functions/str.asm"
+
+; ------------------------------------------------------------------
+
+; Вызвать Ring 3 функцию
+;
+; Адрес: EAX
+call_ring3:
+	push eax
+
+	cli
+	mov ax, 0x23
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+
+	pop eax
+
+	push 0x23
+	push esp
+	pushfd
+	push 0x1b
+	push eax
+	iretd
 	
 ; ------------------------------------------------------------------
 
