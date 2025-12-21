@@ -240,21 +240,11 @@ no_msg db 'No', 0
 
 ; Сделать GPF (General protection fault)
 panic_cmd:
-	; Будет GPF, в защищённом режиме BIOS прерывания не доступны
-	int 10h
+	; Прямо вызвать хендлер GPF
+	int 0x0D
 	
-	; Если не получилось сделать GPF вывести failed_gpf_msg на экран
-	mov byte [vga_attr], 0x1F
-	call clear_screen
-	mov esi, failed_gpf_msg
-	mov byte [pos_x], 0
-	mov byte [pos_y], 0
-	call print_str
-	
-	; Остановить процессор
-	jmp done
+	ret
 panic_cmd_str db 'panic', 0
-failed_gpf_msg db 'Failed to produce GPF', 0
 
 ; Перезапустить компьютер
 restart_cmd:

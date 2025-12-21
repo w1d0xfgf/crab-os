@@ -78,6 +78,8 @@ event_loop:
 	; Enter
 	cmp ax, 0x1C
 	jne .finished_key
+	cmp byte [user_input_top], 0
+	je .finished_key
 	call input_done
 .finished_key:
 	cmp byte [key_queue_top], 0
