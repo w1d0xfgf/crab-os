@@ -53,9 +53,13 @@ protected_start:
 	; IDT
 	call init_idt_and_pic
 
+	; Мышка
 	call mouseinit
-	
+
 	sti ; Включить прерывания
+
+	; Отключить VGA мигание
+	call disable_blink
 	
 	; Включить A20 Line (доступ к >1МБ ОЗУ)
 	call enable_A20

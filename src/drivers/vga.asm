@@ -173,6 +173,25 @@ cursor_to_pos:
 	out dx, al
 
 	ret
+
+; ------------------------------------------------------------------
+
+; Отключить VGA мигание
+disable_blink:
+	mov dx, 0x3DA
+	in al, dx
+
+	mov dx, 0x3C0
+	mov al, 0x10
+	out dx, al
+
+	mov al, 0x00
+	out dx, al
+
+	mov al, 0x20
+	out dx, al
+	
+	ret
 	
 ; ------------------------------------------------------------------
 	

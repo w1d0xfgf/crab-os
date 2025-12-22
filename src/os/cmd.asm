@@ -11,7 +11,7 @@ version_cmd:
 
 	ret
 version_cmd_str db 'version', 0
-version_str db 'v0.1.5', 0
+version_str db 'v0.1.6', 0
 
 ; Тест мышки
 mouse_cmd:
@@ -137,7 +137,8 @@ cmd_list_msg:
 	db 'panic   - Cause a GPF (General Protection Fault)', 13, 10
 	db 'pit     - Print PIT ticks in hexadecimal', 13, 10
 	db 'rand    - Print a random 32-bit number in hexadecimal', 13, 10
-	db 'restart - Restart the computer', 0
+	db 'restart - Restart the computer', 13, 10
+	db 'version - Show OS version', 0
 	
 ; Вывод случайного числа в формате "0xXXXXXXXX"
 rand_cmd:
