@@ -24,8 +24,8 @@ beep_cmd:
 	mov ecx, 1500
 	call play_sound
 
-	; Подождать 100 тиков
-	mov edx, 100
+	; Подождать 1000 тиков
+	mov edx, 1000
 	call sleep_ticks
 
 	; Выключить звук
@@ -160,6 +160,26 @@ rand_cmd_str db 'rand', 0
 
 ; Вывод информации об процессоре на экран
 info_cmd:
+	mov byte [pos_x], 0
+	mov byte [pos_y], 2
+
+	; Проверить, доступно ли CPUID
+	pushfd
+	pop eax
+	mov ecx, eax
+
+	xor eax, 1 << 21
+	push eax
+	popfd
+
+	pushfd
+	pop eax
+
+	xor eax, ecx
+	and eax, 1 << 21
+
+	jz .not_available
+
 	; Получить строку продавца
 	xor eax, eax
 	cpuid
@@ -176,8 +196,6 @@ info_cmd:
 	add esi, 4
 
 	; Печать строки продавца
-	mov byte [pos_x], 0
-	mov byte [pos_y], 2
 	mov esi, vendor_str_msg
 	call print_str
 	mov esi, vendor_str
@@ -211,6 +229,7 @@ info_cmd:
 	; Получение информации про FPU и печать
 	mov eax, 1
 	cpuid
+	; Вывести fpu_msg
 	mov esi, fpu_msg
 	call print_str
 	; Первый бит DL
@@ -218,24 +237,35 @@ info_cmd:
 	test dl, dl
 	jnz .fpu_not_present
 .fpu_present:
-	; Вывести fpu_msg + yes_msg если FPU есть
+	; Вывести yes_msg если FPU есть
+	mov byte [vga_attr], 0x02
 	mov esi, yes_msg
 	call print_str
 	jmp .fpu_endif
 .fpu_not_present:	
-	; Вывести fpu_msg + no_msg если FPU нет
+	; Вывести no_msg если FPU нет
+	mov byte [vga_attr], 0x04
 	mov esi, no_msg
 	call print_str
 .fpu_endif:
-	
+	jmp .end
+
+.not_available:
+	mov byte [vga_attr], 0x04
+	mov esi, cpuid_not_available
+	call print_str
+
+.end:
+	mov byte [vga_attr], 0x07
 	ret
 info_cmd_str db 'info', 0
-vendor_str_msg db 'Vendor: ', 0
+cpuid_not_available db 'CPUID is not available', 0
+vendor_str_msg db 'Vendor:        ', 0
 vendor_str times 13 db 0
-stepping_id_msg db 'Stepping ID: ', 0
-model_msg db 'Model: ', 0
-family_msg db 'Family: ', 0
-fpu_msg db 'FPU present?: ', 0
+stepping_id_msg db 'Stepping ID:   ', 0
+model_msg db 'Model:         ', 0
+family_msg db 'Family:        ', 0
+fpu_msg db 'FPU present?:  ', 0
 yes_msg db 'Yes', 0
 no_msg db 'No', 0
 

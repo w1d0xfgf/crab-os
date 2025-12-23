@@ -19,12 +19,17 @@
 	
 	; Цикл обновлений
 .update:
-	; Подождать 70 тиков PIT
+	; Подождать 900 тиков PIT
+	hlt
+	cli
 	mov eax, [system_timer_ticks]
+	sti
 	sub eax, [last_update_ticks]
-	cmp eax, 70
+	cmp eax, 900
 	jb .skip
+	cli
 	mov edx, [system_timer_ticks]
+	sti
 	mov [last_update_ticks], edx
 
 	; Если нажат Escape выйти

@@ -17,7 +17,9 @@ system_timer_ticks dd 0	; Количество тиков PIT
 ; Тики: EDX
 sleep_ticks:
 	; EAX = Тики + Мс
+	cli
 	mov eax, [system_timer_ticks]
+	sti
 	add eax, edx
 .wait:
 	; Подождать прерывание PIT для того что бы не тратить ресурсы
@@ -26,7 +28,9 @@ sleep_ticks:
 	cli
 
 	; Если тики PIT меньше EAX, повторить
+	cli
 	cmp [system_timer_ticks], eax
+	sti
 	jb .wait
 
 	ret
