@@ -33,7 +33,7 @@ protected_start:
 	sti
 
 	; Мышка
-	;call mouseinit
+	call mouseinit
 
 	; Отключить VGA мигание
 	call disable_blink
