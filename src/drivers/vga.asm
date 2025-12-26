@@ -4,46 +4,37 @@
 
 VIDEO_MEM equ 0xB8000 ; Адрес VGA текстового буфера
 
+; ------------------------------------------------------------------
+
 ; Получить смещение в символах которое соответствует текущей позиции
 ;
-; Меняет: EAX, EBX, ECX
+; Смещение: EAX
+; Меняет: EAX, EDX
 get_pos_offset:
 	; Смещение = x + y * 80
 	
-	xor ecx, ecx			; ECX = 0
-	movzx eax, byte [pos_y]	; EAX = Текущий Y
-	mov ebx, 80				; Вычислить смещение: Y * 80
-	mul ebx 				; EAX *= EBX
-	add ecx, eax			; Добавить смещение по Y
-	
-	movzx eax, byte [pos_x] ; EAX = pos_x
-	add ecx, eax			; Добавить смещение по X
+	movzx eax, byte [pos_y]
+	lea eax, [eax + eax*4]
+	shl eax, 4
+	movzx edx, byte [pos_x]
+	add eax, edx
 	
 	ret
 	
 ; ------------------------------------------------------------------
-	
-; Получить адрес который соответствует текущей позиции
+
+; Получить адрес в VGA буфере который соответствует текущей позиции
 ;
 ; Адрес: EDI
-; Меняет: EAX, EBX, EDI
+; Меняет: EAX, EDX, EDI
 get_pos_addr:
-	; Смещение = 2 * (x + y * 80)
-	; Адрес = VGA буфер + смещение
+	; Адрес = Адрес VGA буфера + 2 * (x + y * 80)
 	
-	xor edi, edi			; EDI = 0
-	movzx eax, byte [pos_y]	; EAX = Текущий Y
-	mov ebx, 80				; Вычислить смещение: Y * 80
-	mul ebx 				; EAX *= EBX
-	add edi, eax			; Добавить смещение по Y
-	
-	movzx eax, byte [pos_x]	; EAX = Текущий X
-	add edi, eax			; Добавить смещение по X
-	
-	shl edi, 1 				; EDI *= 2
-	
-	add edi, VIDEO_MEM  	; EDI += Адрес VGA текстового буфера
-	
+	call get_pos_offset
+	mov edi, eax
+	shl edi, 1
+	add edi, VIDEO_MEM
+
 	ret
 	
 ; ------------------------------------------------------------------
@@ -51,19 +42,17 @@ get_pos_addr:
 ; Напечатать символ на экран
 ; 
 ; Символ: AL
-; Меняет: BL, EDI
+; Меняет: EBX, EDX, EDI
 print_char:
-	push ax ; Сохранить символ
-
-	call get_pos_addr			; Адрес записи -> EDI
-	
-	pop ax ; Вернуть символ
+	push eax
+	call get_pos_addr	; Адрес
+	pop eax
 
 	; Запись в VGA текстовый буфер
-	mov [edi], al 			; Записать символ
-	mov bl, [vga_attr]      ; Загрузить атрибут
-	mov [edi + 1], bl       ; Записать его
-	inc byte [pos_x]		; Следующая позиция на экране
+	mov [edi], al 		; Записать символ
+	mov bl, [vga_attr]	; Загрузить атрибут
+	mov [edi + 1], bl	; Записать его
+	inc byte [pos_x]	; Следующая позиция на экране
 	
 	ret
 	
@@ -72,23 +61,23 @@ print_char:
 ; Напечатать строку на экран
 ;
 ; Адрес строки: ESI
-; Меняет: AL, BL, ESI, EDI
+; Меняет: EAX, EDX, ESI, EDI
 print_str:
-	call get_pos_addr			; Адрес записи -> EDI
+	call get_pos_addr	; Адрес
 	
-	mov al, [esi] 				; Загрузка символа
+	mov al, [esi] 		; Загрузка символа
 	
-	cmp al, 0 					; Код 0 - NULL terminator
-	je .done  					; Завершить
-	cmp al, 13					; Код 13 - \r
-	je .carriage				; Возвращение каретки
-	cmp al, 10					; Код 10 - \n
-	je .newline					; Новая линия
+	cmp al, 0			; Код 0 - NULL terminator
+	je .done			; Завершить
+	cmp al, 13			; Код 13 - \r
+	je .carriage		; Возвращение каретки
+	cmp al, 10			; Код 10 - \n
+	je .newline			; Новая линия
 	
 	; Запись в VGA тектовый буфер
-	mov [edi], al 				; Записать символ
-	mov bl, [vga_attr]          ; Загрузить атрибут
-	mov [edi + 1], bl           ; Записать его
+	mov [edi], al		; Записать символ
+	mov al, [vga_attr]	; Загрузить атрибут
+	mov [edi + 1], al	; Записать его
 
 	; Следующая итерация
 	inc byte [pos_x]
@@ -109,7 +98,7 @@ print_str:
 
 ; Очистить экран
 ;
-; Меняет: AX, ECX, EDI
+; Меняет: EAX, ECX, EDI
 clear_screen:
 	mov ecx, 1000			; Счётчик = 1000 (размер экрана 80x25 символов, запись dword за раз)
 	mov edi, VIDEO_MEM		; Адрес VGA текстового буфера
@@ -130,17 +119,20 @@ clear_screen:
 ; Очистить одну линию
 ;
 ; Линия: EAX
-; Меняет: AX, ECX, EDI
+; Меняет: EAX, ECX, EDI
 clear_line:
-	mov ecx, 80			; Счётчик = 80 (размер линии 80 символов)
+	; Количество символов в линии
+	mov ecx, 80
 
-	mov edi, VIDEO_MEM	; Адрес VGA текстового буфера
-	mov ebx, 80			; Вычислить смещение
-	mul ebx 			; 
-	add edi, eax		; Перейти к линии
+	; Перейти к линии
+	; EDI = EAX * 80
+	lea edi, [eax + eax*4]
+	shl edi, 5
+	add edi, eax
 	
-	mov al, ' '			; Символ
-	mov ah, [vga_attr]	; Атрибут
+	; Символ с атрибутом
+	mov al, ' '
+	mov ah, [vga_attr]
 	
 	; AX -> EDI, EDI += 2, ECX-- до того как ECX = 0
 	rep stosw
@@ -151,10 +143,11 @@ clear_line:
 
 ; Переместить курсор в текущую позицию
 ;
-; Меняет: AL, DX, ECX
+; Меняет: EAX, ECX, EDX
 cursor_to_pos:
 	; Получить смещение в символах
 	call get_pos_offset
+	mov ecx, eax
 	
 	; Записать low byte
 	mov dx, 0x03D4
@@ -177,6 +170,8 @@ cursor_to_pos:
 ; ------------------------------------------------------------------
 
 ; Отключить VGA мигание
+;
+; Меняет: EAX, EDX
 disable_blink:
 	mov dx, 0x3DA
 	in al, dx
@@ -198,7 +193,7 @@ disable_blink:
 ; Установить форму и видимость курсора
 ;
 ; Значение: AH
-; Меняет: AL, DX, ECX
+; Меняет: EAX, EDX, ECX
 set_cursor:
 	mov dx, 0x3D4
 	mov al, 0xA

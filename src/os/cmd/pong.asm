@@ -1,5 +1,5 @@
 	; Скрыть курсор
-	mov ah, 0b00010000
+	mov ah, 00010000b
 	call set_cursor
 
 	; Сбросить значения
@@ -334,7 +334,7 @@
 	mov byte [key_queue_top], 0	
 .return:
 	; Вернуть курсор
-	mov ah, 0b00000000
+	mov ah, 00000000b
 	call set_cursor
 
 	; Вернуть GUI 

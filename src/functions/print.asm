@@ -5,7 +5,7 @@
 ; Печать строки на экран с \r и \n
 ;
 ; Адрес строки: ESI
-; Меняет: EAX, EBX, ESI, EDI
+; Меняет: EAX, EDX, ESI, EDI
 println_str:
 	call print_str		; Печать строки
 	mov byte [pos_x], 0	; Возврат каретки
@@ -37,7 +37,7 @@ out_str_32 db '00000000', 0
 ; Печать reg32 в шестнадцатеричном формате с \r и \n
 ;
 ; Адрес строки: ESI
-; Меняет: EAX, EBX, ESI, EDI
+; Меняет: EAX, EBX, ECX, ESI, EDI
 println_reg32:
 	call print_reg32	; Печать
 	mov byte [pos_x], 0	; Возврат каретки
@@ -49,7 +49,7 @@ println_reg32:
 
 ; Печать reg8 в шестнадцатеричном формате
 ;
-; Меняет: EAX, EBX, ESI, EDI
+; Меняет: EAX, EBX, ECX, ESI, EDI
 print_reg8:
 	; Конвертация
 	mov edi, out_str_8
@@ -69,7 +69,7 @@ out_str_8 db '00', 0
 ; Печать reg8 в шестнадцатеричном формате с \r и \n
 ;
 ; Адрес строки: ESI
-; Меняет: EAX, EBX, ESI, EDI
+; Меняет: EAX, EBX, ECX, ESI, EDI
 println_reg8:
 	call print_reg8		; Печать
 	mov byte [pos_x], 0	; Возврат каретки

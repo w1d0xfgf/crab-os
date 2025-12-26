@@ -1,5 +1,5 @@
 	; Скрыть курсор
-	mov ah, 0b00010000
+	mov ah, 00010000b
 	call set_cursor
 
 	; Изначальная позиция это метка protected_start
@@ -112,7 +112,7 @@
 	jmp .reload
 .exit:
 	; Вернуть курсор
-	mov ah, 0b00000000
+	mov ah, 00000000b
 	call set_cursor
 
 	; Вернуть GUI

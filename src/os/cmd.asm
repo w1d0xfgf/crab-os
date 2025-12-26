@@ -11,7 +11,7 @@ version_cmd:
 
 	ret
 version_cmd_str db 'version', 0
-version_str db 'v0.1.6', 0
+version_str db 'v0.1.5', 0
 
 ; Тест мышки
 mouse_cmd:
@@ -207,7 +207,7 @@ info_cmd:
 	mov eax, 0x01
 	cpuid
 	push ax
-	and al, 0b00001111
+	and al, 00001111b
 	mov [reg8], al
 	call println_reg8
 
@@ -215,27 +215,28 @@ info_cmd:
 	mov esi, model_msg
 	call print_str
 	pop ax
-	and al, 0b11110000
+	and al, 11110000b
+	shr al, 4
 	mov [reg8], al
 	call println_reg8
 
 	; Получение и печать семьи
 	mov esi, family_msg
 	call print_str
-	and ah, 0b00001111
+	and ah, 00001111b
 	mov [reg8], ah
 	call println_reg8
-
-	; Получение информации про FPU и печать
+	
+	; Получение информации про FPU
 	mov eax, 1
 	cpuid
 	; Вывести fpu_msg
 	mov esi, fpu_msg
 	call print_str
-	; Первый бит DL
-	and dl, 0b00000001
+	; Первый бит DL 1 -> FPU есть
+	and dl, 00000001b
 	test dl, dl
-	jnz .fpu_not_present
+	jz .fpu_not_present
 .fpu_present:
 	; Вывести yes_msg если FPU есть
 	mov byte [vga_attr], 0x02
@@ -271,8 +272,9 @@ no_msg db 'No', 0
 
 ; Сделать GPF (General protection fault)
 panic_cmd:
-	; Прямо вызвать хендлер GPF
-	int 0x0D
+	; Загрузить некорректный сегмент (селектор 0x30 не существует)
+	mov ax, 0x30
+	mov ds, ax
 	
 	ret
 panic_cmd_str db 'panic', 0

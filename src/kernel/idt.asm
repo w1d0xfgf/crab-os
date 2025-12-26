@@ -1,21 +1,19 @@
 ; ------------------------------------------------------------------
 ; Interrupt Descriptor Table
 ; ------------------------------------------------------------------
-; Interrupt descriptor table (IDT) - таблица, которая
-; описывает где находятся ISR'ы которые процессор должен вызывать
-; при соответствующих им прерываниям
-; ------------------------------------------------------------------
 
-%define PIC1 0x20
-%define PIC2 0xA0
-%define PIC_EOI 0x20
+PIC1    equ 0x20 ; PIC1 порт
+PIC2    equ 0xA0 ; PIC2 порт
+PIC_EOI equ 0x20 ; PIC EOI
+
+; ------------------------------------------------------------------
 
 ; Макрос для ISR exception прерываний
 %macro isr 2
 	; Скрыть курсор
-	mov ah, 0b00010000
+	mov ah, 00010000b
 	call set_cursor
-
+	
 	; Очистить экран цветом vga_attr
 	mov byte [vga_attr], %2
 	call clear_screen
@@ -31,10 +29,9 @@
 	mov byte [pos_y], 7
 	call println_str
 	
-	; Без прерываний инструкция hlt (halt)
-	; не возобновит работу процессора
-	cli	; Отключить прерывания
-	hlt	; Halt
+	; Остановить процессор
+	cli
+	hlt
 %endmacro
 
 panic_msg:
@@ -45,6 +42,8 @@ panic_msg:
 	db "    '_   ", 0x7F, "   _'       ", 13, 10
 	db "    / '-----' \       ", 0
 
+; ------------------------------------------------------------------
+
 idt:
 	times 256 dq 0	; Все записи изначально пустые
 idt_end:
@@ -53,6 +52,8 @@ idt_end:
 idt_descriptor:
 	dw idt_end - idt - 1
 	dd idt
+
+; ------------------------------------------------------------------
 
 ; Установить одну запись IDT
 ;
@@ -80,40 +81,6 @@ set_idt_entry:
 	and edx, 0xFFFF	; offset_high
 	shl edx, 16		; offset_high в 16..31
 	mov ebp, 0x8E
-	shl ebp, 8		; type_attr в 8..15
-	or edx, ebp
-	mov [edi + 4], edx
-
-	popad			; Восстановить регистры
-	
-	ret
-
-; Установить одну запись IDT для User mode
-;
-; Индекс: EBX
-; Смещение: EAX
-set_idt_entry_user:
-	pushad			; Сохранить регистры
-	
-	mov ecx, ebx	; ECX = индекс * 8, поскольку каждая запись в IDT 8 байт
-	shl ecx, 3		;
-	lea edi, [idt]
-	add edi, ecx	; Добавить к адресу IDT смещение ECX
-
-	; dword low: offset_low (16) | (CODE_SEL << 16)
-	mov edx, eax
-	and edx, 0xFFFF	; Маска: сохранить только первые 16 битов
-	mov ebp, CODE_SEL
-	shl ebp, 16
-	or edx, ebp
-	mov [edi], edx
-
-	; dword high: (zero_byte | (type_attr<<8) | (offset_high<<16))
-	mov edx, eax
-	shr edx, 16		; Сместить EDX на 16 битов
-	and edx, 0xFFFF	; offset_high
-	shl edx, 16		; offset_high в 16..31
-	mov ebp, 0xEE
 	shl ebp, 8		; type_attr в 8..15
 	or edx, ebp
 	mov [edi + 4], edx
@@ -167,7 +134,7 @@ init_idt_and_pic:
 	call init_pic
 	
 	; Настройка PIT (Programmable Interval Timer)
-	mov al, 0b00110100
+	mov al, 00110100b
 	out 0x43, al
 	mov ax, 1193182 / PIT_FREQ	; Делитель = 1193182 / Частота в Гц
 	out 0x40, al				; Нижний байт
@@ -209,11 +176,6 @@ init_idt_and_pic:
 	mov eax, page_fault
 	call set_idt_entry
 
-	; System Call (индекс 0x80)
-	mov ebx, 0x80
-	mov eax, syscall
-	call set_idt_entry_user
-
 	; Загрузка IDT
 	lea eax, [idt_descriptor]
 	lidt [eax]
@@ -224,135 +186,79 @@ init_idt_and_pic:
 	
 ; ------------------------------------------------------------------
 
+; ISR ошибки деления
 div_err: isr div_err_msg, 0x1F
 div_err_msg: db 'Division error', 0
 
+; ISR Non-Maskable Interrupt
 nmi: isr nmi_msg, 0x4F
 nmi_msg: db 'Non-maskable Interrupt', 0
 
-gpf: isr gpf_msg, 0x1F
+; ISR General Protection Fault
+gpf:
+	; Скрыть курсор
+	mov ah, 00010000b
+	call set_cursor
+
+	; Очистить экран цветом vga_attr
+	mov byte [vga_attr], 0x1F
+	call clear_screen
+	
+	; Вывести сообщение
+	mov byte [pos_x], 0
+	mov byte [pos_y], 0
+	mov esi, panic_msg
+	call println_str
+	
+	mov esi, gpf_msg
+	mov byte [pos_x], 2
+	mov byte [pos_y], 7
+	call println_str
+	inc byte [pos_y]
+	
+	; Вывести код ошибки, EIP, и CS
+	; Стек при GPF:
+	; +-----------------------+ ESP + 8
+	; | CS (4 байта)          |
+	; +-----------------------+ ESP + 4
+	; | EIP (4 байта)         |
+	; +-----------------------+ ESP
+	; | Код ошибки (4 байта)  |
+	; +-----------------------+ ESP - 4
+	; | - - - - - - - - - - - |
+
+	mov eax, [esp]
+	mov dword [reg32], eax
+	call println_reg32
+
+	mov eax, [esp + 4]
+	mov dword [reg32], eax
+	call println_reg32
+
+	mov eax, [esp + 8]
+	mov dword [reg32], eax
+	call println_reg32
+
+	; Остановить процессор
+	cli
+	hlt
 gpf_msg: db 'General Protection Fault', 0
 
+; ISR Page Fault
 page_fault: isr page_fault_msg, 0x1F
 page_fault_msg: db 'Page Fault', 0
-	
-; ------------------------------------------------------------------
-
-; Системный вызов
-syscall:
-	pushad
-
-	; Печать
-	cmp eax, 0
-	je .print
-	cmp eax, 1
-	je .println
-	cmp eax, 2
-	je .print_al
-	cmp eax, 3
-	je .print_eax
-	cmp eax, 4
-	je .println_al
-	cmp eax, 5
-	je .println_eax
-
-	; Возврат в ядро
-	cmp eax, 6
-	je .kernel_ret
-
-	; Позиция
-	cmp eax, 7
-	je .set_pos
-
-	jmp .done
-.print:
-	call print_str
-	jmp .done
-.println:
-	call println_str
-	jmp .done
-.print_al:
-	mov [reg8], al
-	call print_reg8
-	jmp .done
-.print_eax:
-	mov [reg32], eax
-	call print_reg32
-	jmp .done
-.println_al:
-	mov [reg8], al
-	call println_reg8
-	jmp .done
-.println_eax:
-	mov [reg32], eax
-	call println_reg32
-	jmp .done
-.kernel_ret:
-	jmp [kernel_ret_addr]
-.set_pos:
-	mov byte [pos_x], dl
-	mov byte [pos_y], dh
-	jmp .done
-.done:
-	popad
-	iret
-
-; Адрес куда будет возврат из User Mode
-kernel_ret_addr dd 0
 
 ; ------------------------------------------------------------------
 
-; PIT ISR
+; ISR PIT
 %include "src/drivers/pit.asm"
 
 ; ------------------------------------------------------------------
 
 ; ISR клавиатуры
-keyboard_stub:
-	; Сохранить регистры
-	pusha
-	push ds
-	push es
-	mov ax, DATA_SEL
-	mov ds, ax
-	mov es, ax
+%include "src/drivers/keyboard.asm"
 
-	; Вызвать хендлер
-	call keyboard_handler
-
-	; Восстановить регистры
-	pop es
-	pop ds
-	popa
-	
-	; EOI для Master PIC
-	mov al, PIC_EOI
-	out PIC_EOI, al
-
-	iret
+; ------------------------------------------------------------------
 
 ; ISR мыши
-mouse_stub:
-	; Сохранить регистры
-	pusha
-	push ds
-	push es
-	mov ax, DATA_SEL
-	mov ds, ax
-	mov es, ax
-
-	; Вызвать хендлер
-	call mousehandle
-
-	; Восстановить регистры
-	pop es
-	pop ds
-	popa
-	
-	mov al, PIC_EOI
-	out 0xA0, al	; EOI для Slave PIC
-	out 0x20, al	; EOI для Master PIC
-
-	iret
-
-%include "src/drivers/keyboard.asm"
+%include "src/drivers/mouse.asm"

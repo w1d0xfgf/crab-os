@@ -33,13 +33,15 @@ play_sound:
 	; Если AL != AL | 3 выдать AL | 3 через порт 0x61
 	or dl, 3
 	cmp al, dl
-	jne .notequal
+	jne .not_equal
 	jmp .done
-.notequal:
+.not_equal:
 	mov al, dl
 	out 0x61, al
 .done:
 	ret
+
+; ------------------------------------------------------------------
 
 ; Остановить звук
 ;

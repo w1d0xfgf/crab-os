@@ -5,7 +5,7 @@
 ; Сравнение двух строк
 ; 
 ; Адресы строк: ESI, EDI
-; Меняет: EAX, ECX
+; Меняет: EAX, ECX, EDX
 compare_strs:
 	mov edx, 1			; Равны = true
 	xor ecx, ecx 		; Индекс (ECX) = 0
@@ -35,7 +35,7 @@ compare_strs:
 ; Запись значения EAX в шестнадцатеричном формате в строку
 ;
 ; Адрес строки: EDI
-; Меняет: AL, EBX, ECX, EDI	
+; Меняет: EAX, EBX, ECX, EDI	
 hex_str_from_eax:
 	mov esi, hex_str		; Адрес hex_str
 	mov ecx, 8 				; Количество символов
@@ -58,7 +58,7 @@ hex_str_from_eax:
 ; Запись значения AL в шестнадцатеричном формате в строку
 ;
 ; Адрес строки: EDI
-; Меняет: AL, EBX, ECX, EDI	
+; Меняет: EAX, EBX, ECX, EDI	
 hex_str_from_al:
 	mov esi, hex_str		; Адрес hex_str
 	mov ecx, 2 				; Счётчик
@@ -89,6 +89,7 @@ hex_str db '0123456789ABCDEF'
 ;
 ; Адрес входной строки: ESI
 ; Адрес выходной строки: EDI
+; Меняет: EAX, EBX, ECX, EDX, ESI, EDI
 trim_str:
 ; Найти начало чистой строки
 .leading:

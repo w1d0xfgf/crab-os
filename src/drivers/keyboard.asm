@@ -2,15 +2,33 @@
 ; Драйвер клавиатуры
 ; ------------------------------------------------------------------
 
-; Ожидать нажатия клавиши и выдать scancode
-;
-; Scancode: EBX
-wait_key:
-	movzx ebx, byte [key_queue_top]		; Проверить есть ли в очереди клавиши
-	test ebx, ebx						; 
-	jz wait_key						    ; Если нет, повторить
+; ISR клавиатуры
+keyboard_stub:
+	; Сохранить состояние
+	pushad
+	push ds
+	push es
 
-	ret
+	; Установить сегменты
+	mov ax, DATA_SEL
+	mov es, ax
+	mov ds, ax
+
+	; Вызвать хендлер
+	call keyboard_handler
+
+	; EOI для Master PIC
+	mov al, PIC_EOI
+	out 0x20, al
+
+	; Восстановить состояние
+	pop es
+	pop ds
+	popad
+
+	iretd
+
+; ------------------------------------------------------------------
 
 ; Хендлер клавиатуры
 keyboard_handler:
@@ -66,6 +84,20 @@ keyboard_handler:
 	mov byte [prev_E0], 1
 .end:
 	ret
+
+; ------------------------------------------------------------------
+
+; Ожидать нажатия клавиши и выдать scancode
+;
+; Scancode: EBX
+wait_key:
+	movzx ebx, byte [key_queue_top]		; Проверить есть ли в очереди клавиши
+	test ebx, ebx						; 
+	jz wait_key						    ; Если нет, повторить
+
+	ret
+
+; ------------------------------------------------------------------
 
 KEY_QUEUE_SIZE equ 16               ; Размер очереди
 key_queue times KEY_QUEUE_SIZE db 0	; Очередь для нажатых клавиш

@@ -45,8 +45,6 @@ update_gui:
 	DATE_GUI_POS_Y equ 0
 	
 	mov byte [vga_attr], 0x06
-
-	cli
 	
 	; Получить время
 	call get_rtc_time
@@ -134,7 +132,5 @@ update_gui:
 	pop eax
 	mov [pos_x], al
 	mov [pos_y], ah
-	
-	sti ; Включить прерывания
 	
 	ret

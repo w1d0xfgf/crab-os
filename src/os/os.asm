@@ -26,10 +26,13 @@ event_loop:
 	
 	; Scancode
 	dec ebx								; EBX = Индекс верхнего элемента
-	movzx ax, byte [key_queue + ebx]	; Scancode
-	
-	; Символ
+	movzx eax, byte [key_queue + ebx]	; Scancode
+
+	; Сохранить Scancode
 	push ax
+
+	cmp al, 0x7F
+	jae .non_printable
 
 	; Проверка на левый и правый Shift
 	cmp byte [keys_pressed + 0x2A], 1
@@ -51,9 +54,12 @@ event_loop:
 	; Непечатаемые символы
 	test al, al
 	jz .non_printable
+	
+	; Убрать scancode со стека
+	add esp, 2
 
 	; Проверить, заполнен ли user_input (user_input_top >= длина - 1)
-	cmp byte [user_input_top], 31
+	cmp byte [user_input_top], USER_INPUT_SIZE_BYTES - 1
 	jae .finished_key
 
 	; Сохранить символ в user_input
@@ -69,14 +75,15 @@ event_loop:
 	
 	jmp .finished_key
 .non_printable:
+	; Получить scancode
 	pop ax
 	
 	; Backspace
-	cmp ax, 0x0E
+	cmp al, 0x0E
 	je .backspace
 	
 	; Enter
-	cmp ax, 0x1C
+	cmp al, 0x1C
 	jne .finished_key
 	cmp byte [user_input_top], 0
 	je .finished_key
@@ -101,9 +108,9 @@ event_loop:
 	call cursor_to_pos	; Обновить позицию курсора
 
 	; Обновить строку ввода
+	dec byte [user_input_top]
 	movzx ebx, byte [user_input_top]
 	mov byte [user_input + ebx], 0
-	dec byte [user_input_top]
 
 	jmp .finished_key
 .skip_key:
@@ -250,7 +257,7 @@ reset_user_input:
 	mov byte [user_input + ecx], 0
 
 	inc ecx
-	cmp ecx, 64
+	cmp ecx, USER_INPUT_SIZE_BYTES
 	jb .loop
 	
 	ret
@@ -271,6 +278,5 @@ USER_INPUT_SIZE_BYTES equ 32
 ; Строка которую ввёл пользователь
 user_input: times USER_INPUT_SIZE_BYTES db 0
 user_input_top: db 0
-
 ; Обрезанная строка (без лишних пробелов, \n и \r)
 user_input_trimmed: times USER_INPUT_SIZE_BYTES db 0
