@@ -38,9 +38,6 @@ protected_start:
 	; Отключить VGA мигание
 	call disable_blink
 	
-	; Включить A20 Line (доступ к >1МБ ОЗУ)
-	call enable_A20
-	
 	; Установить форму курсора
 	mov ah, 00000000b
 	call set_cursor
@@ -62,9 +59,6 @@ done:
 
 ; Драйвер PC Speaker
 %include "src/drivers/speaker.asm"
-
-; A20 Line
-%include "src/kernel/a20.asm"
 
 ; ------------------------------------------------------------------
 

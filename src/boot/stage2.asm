@@ -7,21 +7,31 @@ bits 16
 ; GDT селекторы
 CODE_SEL      equ 0x08	; Код Ring 0
 DATA_SEL      equ 0x10	; Данные Ring 0
-USER_CODE_SEL equ 0x18	; Код Ring 3
-USER_DATA_SEL equ 0x20	; Данные Ring 3
 
 start:
-	cli ; Отключить прерывания
+	; Отключить прерывания
+	cli
 
-	lgdt [gdt_descriptor] ; Загрузка GDT
+	; Загрузить GDT
+	lgdt [gdt_descriptor] 
 
-	; Переход в защищённый режим
+	; Включить A20 Line
+	call enable_A20
+
+	; Перейти в защищённый режим
 	mov eax, cr0			
 	or eax, 1
 	mov cr0, eax
 
 	; Far-прыжок в ядро
 	jmp CODE_SEL:protected_start
+
+; ------------------------------------------------------------------
+
+; A20 Line
+%include "src/boot/a20.asm"
+
+; ------------------------------------------------------------------
 
 ; GDT
 gdt_start:

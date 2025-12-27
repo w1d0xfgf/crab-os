@@ -48,7 +48,7 @@ cls_cmd_str db 'cls', 0
 
 ; Вывести тики PIT на экран
 pit_cmd:
-	mov eax, [system_timer_ticks]
+	mov eax, [pit_ticks]
 	mov [reg32], eax
 	mov byte [pos_x], 0
 	mov byte [pos_y], 2
@@ -281,7 +281,6 @@ panic_cmd_str db 'panic', 0
 
 ; Перезапустить компьютер
 restart_cmd:
-	cli	; Выключить прерывания
 .wait_kbc:
 	in al, 0x64		; Статусный порт i8042
 	test al, 0x02	; Входной буфер занят?
@@ -291,15 +290,6 @@ restart_cmd:
 	mov al, 0xFE	
 	out 0x64, al
 	
-	; Если перезагрузка не сработала вывести failed_restart_msg на экран
-	mov byte [vga_attr], 0x1F
-	call clear_screen
-	mov esi, failed_restart_msg
-	mov byte [pos_x], 0
-	mov byte [pos_y], 0
-	call print_str
-	
 	; Остановить процессор
 	jmp done
 restart_cmd_str db 'restart', 0
-failed_restart_msg db 'Failed to restart', 0

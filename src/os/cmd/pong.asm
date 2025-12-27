@@ -1,7 +1,7 @@
 	; Скрыть курсор
 	mov ah, 00010000b
 	call set_cursor
-
+	
 	; Сбросить значения
 	mov byte [p1_paddle_pos], 12
 	mov byte [p2_paddle_pos], 12
@@ -22,13 +22,13 @@
 	; Подождать 900 тиков PIT
 	hlt
 	cli
-	mov eax, [system_timer_ticks]
+	mov eax, [pit_ticks]
 	sti
 	sub eax, [last_update_ticks]
 	cmp eax, 900
 	jb .skip
 	cli
-	mov edx, [system_timer_ticks]
+	mov edx, [pit_ticks]
 	sti
 	mov [last_update_ticks], edx
 

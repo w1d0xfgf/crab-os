@@ -7,20 +7,29 @@ PIT_FREQ equ 10000	; Частота PIT
 ; ------------------------------------------------------------------
 
 ; ISR PIT прерывания
-system_timer:
-	push ax
+pit_stub:
+	pushad
+	push es
+	push ds
+
+	mov ax, DATA_SEL
+	mov es, ax
+	mov ds, ax
 
 	; Сохранить контекст
-	inc dword [system_timer_ticks]	
+	inc dword [pit_ticks]
 	
+	; PIC EOI
 	mov al, PIC_EOI
 	out PIC1, al
-	
-	pop ax
+
+	pop ds
+	pop es
+	popad
 
 	iretd
 	
-system_timer_ticks dd 0	; Количество тиков PIT
+pit_ticks dd 0	; Количество тиков PIT
 
 ; ------------------------------------------------------------------
 
@@ -30,7 +39,7 @@ system_timer_ticks dd 0	; Количество тиков PIT
 sleep_ticks:
 	; EAX = Тики + Мс
 	cli
-	mov eax, [system_timer_ticks]
+	mov eax, [pit_ticks]
 	sti
 	add eax, edx
 .wait:
@@ -39,7 +48,7 @@ sleep_ticks:
 
 	; Если тики PIT меньше EAX, повторить
 	cli
-	cmp [system_timer_ticks], eax
+	cmp [pit_ticks], eax
 	sti
 	jb .wait
 	

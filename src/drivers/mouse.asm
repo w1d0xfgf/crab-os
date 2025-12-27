@@ -18,8 +18,8 @@ mouse_stub:
 	call mousehandle
 
 	mov al, PIC_EOI
-	out 0xA0, al	; EOI для Slave PIC
-	out 0x20, al	; EOI для Master PIC
+	out PIC2, al	; EOI для Slave PIC
+	out PIC1, al	; EOI для Master PIC
 
 	; Восстановить состояние
 	pop es

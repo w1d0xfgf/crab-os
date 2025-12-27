@@ -2,14 +2,18 @@
 ; Interrupt Descriptor Table
 ; ------------------------------------------------------------------
 
-PIC1    equ 0x20 ; PIC1 порт
-PIC2    equ 0xA0 ; PIC2 порт
-PIC_EOI equ 0x20 ; PIC EOI
+PIC1		equ 0x20 ; Master PIC порт команд
+PIC1_DATA	equ 0x21 ; Master PIC порт данных
+PIC2		equ 0xA0 ; Slave PIC порт команд
+PIC2_DATA	equ 0xA1 ; Slave PIC порт данных
+PIC_EOI		equ 0x20 ; PIC EOI
 
 ; ------------------------------------------------------------------
 
 ; Макрос для ISR exception прерываний
 %macro isr 2
+	cli
+
 	; Скрыть курсор
 	mov ah, 00010000b
 	call set_cursor
@@ -91,35 +95,54 @@ set_idt_entry:
 	
 ; ------------------------------------------------------------------
 
-; Инициализация PIC (remap 0x20..0x2F)
+; I/O ожидание (для PIC на старых устройствах обязательно)
+%macro io_wait 0
+	out 0x80, al ; Отправить данные через неиспользуемый порт
+%endmacro
+
+; Инициализация PIC
+; Ремап: IRQ 0..15 -> индексы 0x20..0x2F в IDT
+; 
+; Меняет: AL
 init_pic:
-	; ICW1: start initialization
+	; Начать инициализацию
 	mov al, 0x11
-	out 0x20, al
-	out 0xA0, al
+	out PIC1, al
+	io_wait
+	mov al, 0x11
+	out PIC2, al
+	io_wait
 	
-	; ICW2: master vector offset = 0x20, slave = 0x28
+	; Смещение Master PIC
 	mov al, 0x20
-	out 0x21, al
+	out PIC1_DATA, al
+	io_wait
+	; Смещение Slave PIC
 	mov al, 0x28
-	out 0xA1, al
+	out PIC2_DATA, al
+	io_wait
 	
-	; ICW3: wiring
-	mov al, 0x04	; master: bitmask, slave on IRQ2
-	out 0x21, al
-	mov al, 0x02	; slave identity = 2
-	out 0xA1, al
+	; Сообщить PIC как Slave PIC и Master PIC соединены
+	mov al, 0x04
+	out PIC1_DATA, al
+	io_wait
+	mov al, 0x02
+	out PIC2_DATA, al
+	io_wait
 	
-	; ICW4: 8086 mode
+	; 8086 mode вместо 8080 mode
 	mov al, 0x01
-	out 0x21, al
-	out 0xA1, al
+	out PIC1_DATA, al
+	io_wait
+	mov al, 0x01
+	out PIC2_DATA, al
+	io_wait
 	
-	; Master PIC, включение IRQ0, IRQ1, IRQ2
+	; Маска прерываний Master PIC: включить IRQ 0, 1, 2
 	mov al, 11111000b
 	out 0x21, al
 
-	; Slave PIC, включение IRQ12
+	; Маска прерываний Slave PIC: включить IRQ 12
 	mov al, 11101111b
 	out 0xA1, al
 	
@@ -138,22 +161,40 @@ init_idt_and_pic:
 	out 0x43, al
 	mov ax, 1193182 / PIT_FREQ	; Делитель = 1193182 / Частота в Гц
 	out 0x40, al				; Нижний байт
-	mov al, ah					; Нельзя прямо вывести AH, поэтому перенос AH -> AL
+	mov al, ah					; Нельзя прямо out AH, поэтому перенос AH -> AL
 	out 0x40, al				; Верхний байт
-	
-	; PIT - IRQ0 (индекс 0x20)
+
+	; Заполнить IRQ0-IRQ7 (IRQ master PIC) пустыми ISR
 	mov ebx, 0x20
-	mov eax, system_timer
+	mov eax, isr_empty_master
+.loopm:
+	call set_idt_entry
+	inc ebx
+	cmp ebx, 0x28
+	jb .loopm
+
+	; Заполнить IRQ8-IRQ15 (IRQ slave PIC) пустыми ISR
+	mov ebx, 0x28
+	mov eax, isr_empty_slave
+.loops:
+	call set_idt_entry
+	inc ebx
+	cmp ebx, 0x30
+	jb .loops
+
+	; Записать ISR PIT для IRQ0 (индекс 0x20)
+	mov eax, pit_stub
+	mov ebx, 0x20
 	call set_idt_entry
 
-	; Клавиатура - IRQ1 (индекс 0x21)
-	mov ebx, 0x21
+	; Записать ISR клавиатуры для IRQ1 (индекс 0x21)
 	mov eax, keyboard_stub
+	mov ebx, 0x21
 	call set_idt_entry
 
-	; Мышка - IRQ12 (индекс 0x2C)
-	mov ebx, 0x2C
+	; Записать ISR мышки для IRQ12 (индекс 0x2C)
 	mov eax, mouse_stub
+	mov ebx, 0x2C
 	call set_idt_entry
 	
 	; Исключение ошибки деления (индекс 0x00)
@@ -196,6 +237,8 @@ nmi_msg: db 'Non-maskable Interrupt', 0
 
 ; ISR General Protection Fault
 gpf:
+	cli
+
 	; Скрыть курсор
 	mov ah, 00010000b
 	call set_cursor
@@ -226,16 +269,16 @@ gpf:
 	; | Код ошибки (4 байта)  |
 	; +-----------------------+ ESP - 4
 	; | - - - - - - - - - - - |
-
-	mov eax, [esp]
+	
+	pop eax
 	mov dword [reg32], eax
 	call println_reg32
 
-	mov eax, [esp + 4]
+	pop eax
 	mov dword [reg32], eax
 	call println_reg32
 
-	mov eax, [esp + 8]
+	pop eax
 	mov dword [reg32], eax
 	call println_reg32
 
@@ -262,3 +305,26 @@ page_fault_msg: db 'Page Fault', 0
 
 ; ISR мыши
 %include "src/drivers/mouse.asm"
+
+; ------------------------------------------------------------------
+
+; ISR-пустышка для Master PIC
+isr_empty_master:
+	; Отправить EOI Master PIC
+	push eax
+	mov al, PIC_EOI
+	out PIC1, al
+	pop eax
+
+	iretd
+	
+; ISR-пустышка для Slave PIC
+isr_empty_slave:
+	; Отправить EOI Slave PIC и Master PIC
+	push eax
+	mov al, PIC_EOI
+	out PIC2, al
+	out PIC1, al
+	pop eax
+
+	iretd

@@ -16,10 +16,10 @@ keyboard_stub:
 
 	; Вызвать хендлер
 	call keyboard_handler
-
+	
 	; EOI для Master PIC
 	mov al, PIC_EOI
-	out 0x20, al
+	out PIC1, al
 
 	; Восстановить состояние
 	pop es
