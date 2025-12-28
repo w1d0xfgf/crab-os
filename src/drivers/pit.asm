@@ -9,11 +9,9 @@ PIT_FREQ equ 10000	; Частота PIT
 ; ISR PIT прерывания
 pit_stub:
 	pushad
-	push es
 	push ds
 
 	mov ax, DATA_SEL
-	mov es, ax
 	mov ds, ax
 
 	; Сохранить контекст
@@ -22,9 +20,8 @@ pit_stub:
 	; PIC EOI
 	mov al, PIC_EOI
 	out PIC1, al
-
+	
 	pop ds
-	pop es
 	popad
 
 	iretd

@@ -27,14 +27,16 @@ protected_start:
 	mov ss, ax
 	mov esp, stack_top
 	
+	call clear_screen
+	
 	; IDT
 	call init_idt_and_pic
 
 	sti
 
-	; Мышка
-	call mouseinit
-
+	; Инициализировать мышку
+	call mouse_init
+	
 	; Отключить VGA мигание
 	call disable_blink
 	

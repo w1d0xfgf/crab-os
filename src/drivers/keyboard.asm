@@ -17,7 +17,7 @@ keyboard_stub:
 	; Вызвать хендлер
 	call keyboard_handler
 	
-	; EOI для Master PIC
+	; Отправить EOI Master PIC
 	mov al, PIC_EOI
 	out PIC1, al
 

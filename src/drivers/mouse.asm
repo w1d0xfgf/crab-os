@@ -1,5 +1,5 @@
 ; ------------------------------------------------------------------
-; Драйвер мышки (работает только на эмуляторах)
+; Драйвер PS/2 мышки
 ; ------------------------------------------------------------------
 
 ; ISR мыши
@@ -7,22 +7,20 @@ mouse_stub:
 	; Сохранить состояние
 	pushad
 	push ds
-	push es
 
 	; Установить сегменты
 	mov ax, DATA_SEL
 	mov ds, ax
-	mov es, ax
 
 	; Вызвать хендлер
-	call mousehandle
+	call mouse_handler
 
+	; Отправить EOI Slave PIC и Master PIC
 	mov al, PIC_EOI
-	out PIC2, al	; EOI для Slave PIC
-	out PIC1, al	; EOI для Master PIC
-
+	out PIC2, al
+	out PIC1, al
+	
 	; Восстановить состояние
-	pop es
 	pop ds
 	popad
 
@@ -30,189 +28,184 @@ mouse_stub:
 
 ; ------------------------------------------------------------------
 
-; Комментарии пока что на англ и два таба вместо одного, код сворованный с форумов OSDev, потом изменю
+; Хендлер мышки
+mouse_handler:
+	; Получить байт
+	in al, 0x60
 
-;variables
-packetsize: db 0
-resolution: db 3
-samplerate: db 200
+	; Индекс
+	xor ebx, ebx
+	mov bl, byte [mouse_packet_index]
 
-mouseinit:
-		;initialize legacy ps2 user input
-		xor			eax, eax
-		mov			dl, 2
-		call			ps2wait
-		mov			al, 0A8h
-		out			64h, al
-		;get ack
-		call			ps2rd
-		;some compaq voodoo magic to enable irq12
-		mov			dl, 2
-		call			ps2wait
-		mov			al, 020h
-		out			64h, al
-		mov			dl, 1
-		call			ps2wait
-		in			al, 60h
-		bts			ax, 1
-		btr			ax, 5
-		mov			bl, al
-		mov			dl, 2
-		call			ps2wait
-		mov			al, 060h
-		out			64h, al
-		call			ps2wait
-		mov			al, bl
-		out			60h, al
-		;get optional ack
-		mov			dl, 1
-		call			ps2wait
+	; Если не последний байт, сохранить байт
+	cmp bl, 2
+	jne .store
 
-		;restore to defaults
-		mov			al, 0F6h
-		call			ps2wr
-		;enable Z axis
-		mov			al, 0F3h
-		call			ps2wr
-		mov			al, 200
-		call			ps2wr
-		mov			al, 0F3h
-		call			ps2wr
-		mov			al, 100
-		call			ps2wr
-		mov			al, 0F3h
-		call			ps2wr
-		mov			al, 80
-		call			ps2wr
-		mov			al, 0F2h
-		call			ps2wr
-		call			ps2rd
-		mov			byte [packetsize], 3
-		or			al, al
-		jz			.noZaxis
-		mov			byte [packetsize], 4
-.noZaxis:	;enable 4th and 5th buttons
-		mov			al, 0F3h
-		call			ps2wr
-		mov			al, 200
-		call			ps2wr
-		mov			al, 0F3h
-		call			ps2wr
-		mov			al, 200
-		call			ps2wr
-		mov			al, 0F3h
-		call			ps2wr
-		mov			al, 80
-		call			ps2wr
-		mov			al, 0F2h
-		call			ps2wr
-		call			ps2rd
+	; Сохранить байт и обработать пакет
+	mov [mouse_packet + ebx], al
+	mov byte [mouse_packet_index], 0
+	; Проверка переполнения
+	mov al, byte [mouse_packet]
+	test al, 11000000b
+	jnz .end
+	; Состояние
+	mov al, byte [mouse_packet]
+	mov [mouse_state], al
+	; ΔX
+	movsx ax, byte [mouse_packet + 1]
+	add [mouse_x], ax
+	; ΔY
+	movsx ax, byte [mouse_packet + 2]
+	sub [mouse_y], ax ; Инверсия
+	jmp .end
+.store:
+	; Сохранить байь и увеличить индекс
+	mov [mouse_packet + ebx], al
+	inc bl
+	mov [mouse_packet_index], bl
+.end:
+	ret
+.discard:
+	mov byte [mouse_packet_index], 0
+	ret
 
-		;set sample rate
-		mov			al, 0F3h
-		call			ps2wr
-		mov			al, byte[samplerate] ;200
-		call			ps2wr
-		;set resolution
-		mov			al, 0E8h
-		call			ps2wr
-		mov			al, byte [resolution] ;3
-		call			ps2wr
-		;set scaling 1:1
-		mov			al, 0E6h
-		call			ps2wr
-		;enable
-		mov			al, 0F4h
-		call			ps2wr
+mouse_packet_index db 0
+mouse_packet times 3 db 0
+mouse_x dw 0
+mouse_y dw 0
+mouse_state db 0
 
-		;reset variables
-		xor			eax, eax
-		mov			dword [cnt], eax
-		mov			dword [y], eax
+; ------------------------------------------------------------------
 
-;dl=1 read, dl=2 write
-ps2wait:	mov			ecx, 1000
-.b:		in			al, 64h
-		and			al, dl
-		jnz			.f
-		dec			ecx
-		jnz			.b
-.f:		ret
-ps2wr:	mov			dh, al
-		mov			dl, 2
-		call			ps2wait
-		mov			al, 0D4h
-		out			64h, al
-		call			ps2wait
-		mov			al, dh
-		out			60h, al
-		;no ret, fall into read code to read ack
-ps2rd:	mov			dl, 1
-		call			ps2wait
-		in			al, 60h
-		ret
+MOUSE_RESOLUTION equ 2
+MOUSE_SAMPLE_RATE equ 60
 
+; Инициализация мышки
+; 
+; Меняет: AL, BL, ECX
+mouse_init:
+	; Команда включения Auxiliary Device
+	call ps2_wait_wr
+	mov al, 0xA8
+	out 0x64, al
+
+	; Включить IRQ12
+
+	; Команда получения Compaq статуса
+	call ps2_wait_wr
+	mov al, 0x20
+	out 0x64, al
+
+	; Получить Compaq статус
+	call ps2_wait_rd
+	in al, 0x60
 	
+	; Включить бит 1 и выключить бит 5
+	bts ax, 1
+	btr ax, 5
 
+	; Команда установки Compaq статуса
+	mov bl, al
+	call ps2_wait_wr
+	mov al, 0x60
+	out 0x64, al
 
-		;variables
-packet: dd 0	;raw packet
-;keep them together
-cnt: db 0		;byte counter
-buttons: db 0	;buttons, each bit represents one button from bits 1-5, 0-released, 1-pressed
-x: dw 0		;position on x,y,z axis
-y: dw 0
-z: dw 0
+	; Задать Compaq статус
+	call ps2_wait_wr
+	mov al, bl
+	out 0x60, al
 
-mousehandle:
-		xor			ecx, ecx
-		mov			cx, 1000
-		xor			eax, eax
-.waitkey:	in			al, 64h
-		dec			cl
-		jnz			.f
-		ret
-.f:		and			al, 20h
-		jz			.waitkey
-		in			al, 60h
-		mov			cl, al
-		in			al, 61h
-		out			61h, al
-		xor			ebx, ebx
-		mov			bl, byte [cnt]
-		add			ebx, packet
-		mov			byte [ebx], cl
-		inc			byte [cnt]
-		mov			bl, byte [cnt]
-		cmp			bl, byte [packetsize]
-		jb			.end
-		mov			byte [cnt], 0
+	; Настроить мышь
+	
+	; Команда сброса мыши
+	mov ah, 0xFF
+	call .ps2_mouse_wr
+	; Self-Test
+	call ps2_wait_rd
+	in al, 0x60
+	; ID
+	call ps2_wait_rd
+	in al, 0x60
 
-		;get buttons state
- 		mov			al, byte [packet]
-		and			al, 7
-		mov			cl, byte [packet+3]
-		and			cl, 0F0h
-		cmp			cl, 0F0h
-		je			.no45btn
-		shr			cl, 1
-		or			al, cl
-.no45btn:	mov			byte [buttons], al
-		;get delta X
-		movsx		eax, byte [packet+1]
-		add			word [x], ax
-		;get delta Y
-		movsx		eax, byte [packet+2]
-		sub			word [y], ax
-		;get delta Z
-		mov			cl, byte [packet+3]
-		and			cl, 0Fh
-		cmp			cl, 8
-		jb			.f2
-		or			cl, 0F0h
-.f2:	movsx		eax, cl
-		add			word [z], ax
+	; Команда установки частоты
+	mov ah, 0xF3
+	call .ps2_mouse_wr
+	; Частота
+	mov ah, MOUSE_SAMPLE_RATE
+	call .ps2_mouse_wr
 
-;buttons,x,y,z variables contains valid values now.
-;here you possibly want to send a mouse event message to your gui process.
-.end:		ret
+	; Команда установки разрешения
+	mov ah, 0xE8
+	call .ps2_mouse_wr
+	; Разрешение
+	mov ah, MOUSE_RESOLUTION
+	call .ps2_mouse_wr
+
+	; Команда установки масштаба 1:1
+	mov ah, 0xE6
+	call .ps2_mouse_wr
+
+	; Команда включения автоматической отправки пакетов
+	mov ah, 0xF4
+	call .ps2_mouse_wr
+
+	ret
+
+; Отослать команду/данные PS/2 мышке
+.ps2_mouse_wr:
+	; Сообщить то что команда/данные для мыши
+	call ps2_wait_wr
+	mov al, 0xD4
+	out 0x64, al
+	
+	; Команда для мыши
+	call ps2_wait_wr
+	mov al, ah
+	out 0x60, al
+
+	; Проверить, отослала ли мышка ACK (0xFA)
+	call ps2_wait_rd
+	in al, 0x60
+	cmp al, 0xFA
+	jne .error
+
+	ret
+.error:
+	mov esi, ps2_mouse_error_msg
+	call println_str
+
+	mov byte [key_queue_top], 0
+	call wait_key
+	mov byte [key_queue_top], 0
+
+	ret
+
+ps2_mouse_error_msg db 'PS/2 mouse initialization error', 0
+
+; ------------------------------------------------------------------
+
+; Подождать перед отсылкой команды контроллеру 8042 (порт 0x64/0x60)
+ps2_wait_wr:
+	mov ecx, 0xFFFF
+.loop:
+	in al, 0x64
+	test al, 00000010b
+	jz .done
+	dec ecx
+	jz .done
+	jmp .loop
+.done:
+	ret
+
+; Подождать перед чтением из контроллера 8042 (порт 0x60)
+ps2_wait_rd:
+	mov ecx, 0xFFFF
+.loop:
+	in al, 0x64
+	test al, 00000001b
+	jnz .done
+	dec ecx
+	jz .done
+	jmp .loop
+.done:
+	ret
