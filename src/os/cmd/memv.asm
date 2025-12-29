@@ -67,6 +67,9 @@
 	dec ecx
 	jnz .loop
 
+	; Отобразить
+	call flush_buffer
+
 	; Обработать нажатие клавиши
 .check_key:
 	call wait_key

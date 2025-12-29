@@ -284,6 +284,9 @@
 	mov al, 0xFE
 	call print_char
 
+	; Отобразить
+	call flush_buffer
+
 	; Проверить выиграл ли игрок 1
 	cmp byte [ball_pos_x], 79
 	je .end_p1

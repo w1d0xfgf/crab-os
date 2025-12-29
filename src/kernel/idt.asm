@@ -32,6 +32,8 @@ PIC_EOI		equ 0x20 ; PIC EOI
 	mov byte [pos_x], 2
 	mov byte [pos_y], 7
 	call println_str
+
+	call flush_buffer
 	
 	; Остановить процессор
 	cli
@@ -281,6 +283,8 @@ gpf:
 	pop eax
 	mov dword [reg32], eax
 	call println_reg32_hex
+
+	call flush_buffer
 
 	; Остановить процессор
 	cli

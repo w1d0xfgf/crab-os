@@ -7,7 +7,7 @@
 ; Число: EAX
 ; Меняет: EAX, EBX, EDX
 rng_next:
-	; Результат = rol(state[1] * 5, 7) * 9
+	; Случайное число = rol(state[1] * 5, 7) * 9
 	mov eax, [rng_state + 4]
 	mov ebx, 5
 	mul ebx
@@ -15,11 +15,13 @@ rng_next:
 	mov ebx, 9
 	mul ebx
 	
-	; Сохранить результат
+	; Сохранить число
 	push eax
 	
-	; Адрес = Начало массива + индекс * байтов на элемент
-	; Double Word - 4 байта
+	; Обновить состояние RNG
+
+	; Адрес элемента в массиве = Адрес массива + Индекс * Байтов на элемент
+	; Double Word -- 4 байта
 
 	; state[2] = xor(state[2], state[0])
 	mov eax, [rng_state + 8]
@@ -46,7 +48,7 @@ rng_next:
 	mov [rng_state + 0], eax
 	
 	; state[2] = xor(state[2], state[1] << 9)
-	mov edx, [rng_state + 1]
+	mov edx, [rng_state + 4]
 	shl edx, 9
 	mov eax, [rng_state + 8]
 	xor eax, edx
@@ -57,7 +59,7 @@ rng_next:
 	rol eax, 11
 	mov [rng_state + 12], eax
 
-	; Вернуть результат
+	; Вернуть число
 	pop eax
 	
 	ret
@@ -67,6 +69,7 @@ rng_next:
 ; Сделать состояние PRNG из одного 32-битного сида
 ; 
 ; Сид: EAX
+; Меняет: EAX, EDX
 seed_rng:
 	; state[0]
 	call .splitmix32
@@ -90,21 +93,21 @@ seed_rng:
 
 	; EAX = (EAX ^ (EAX >> 16)) * 0x85EBCA6B
 	mov edx, eax
-	shl edx, 16
+	shr edx, 16
 	xor eax, edx
 	mov edx, 0x85EBCA6B
 	mul edx
 
 	; EAX = (EAX ^ (EAX >> 13)) * 0xC2B2AE35
 	mov edx, eax
-	shl edx, 13
+	shr edx, 13
 	xor eax, edx
 	mov edx, 0xC2B2AE35
 	mul edx
 
 	; EAX = EAX ^ (EAX >> 16)
 	mov edx, eax
-	shl edx, 16
+	shr edx, 16
 	xor eax, edx
 
 	ret

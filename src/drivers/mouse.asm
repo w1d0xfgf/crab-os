@@ -32,10 +32,14 @@ mouse_stub:
 mouse_handler:
 	; Получить байт
 	in al, 0x60
-
+	
 	; Индекс
 	xor ebx, ebx
 	mov bl, byte [mouse_packet_index]
+
+	; Если первый байт, проверить синхронизацию
+	cmp bl, 0
+	je .first
 
 	; Если не последний байт, сохранить байт
 	cmp bl, 2
@@ -58,8 +62,12 @@ mouse_handler:
 	movsx ax, byte [mouse_packet + 2]
 	sub [mouse_y], ax ; Инверсия
 	jmp .end
+.first:
+	; Бит 3 в первом байте обязан быть 1
+	test al, 00001000b
+	jz .discard
 .store:
-	; Сохранить байь и увеличить индекс
+	; Сохранить байт и увеличить индекс
 	mov [mouse_packet + ebx], al
 	inc bl
 	mov [mouse_packet_index], bl
@@ -77,10 +85,11 @@ mouse_state db 0
 
 ; ------------------------------------------------------------------
 
+; Настройки мыши
 MOUSE_RESOLUTION equ 2
 MOUSE_SAMPLE_RATE equ 60
 
-; Инициализация мышки
+; Инициализация PS/2 мыши
 ; 
 ; Меняет: AL, BL, ECX
 mouse_init:
@@ -141,10 +150,6 @@ mouse_init:
 	mov ah, MOUSE_RESOLUTION
 	call .ps2_mouse_wr
 
-	; Команда установки масштаба 1:1
-	mov ah, 0xE6
-	call .ps2_mouse_wr
-
 	; Команда включения автоматической отправки пакетов
 	mov ah, 0xF4
 	call .ps2_mouse_wr
@@ -158,7 +163,7 @@ mouse_init:
 	mov al, 0xD4
 	out 0x64, al
 	
-	; Команда для мыши
+	; Команда/данные для мыши
 	call ps2_wait_wr
 	mov al, ah
 	out 0x60, al
@@ -171,9 +176,9 @@ mouse_init:
 
 	ret
 .error:
+	; Вывести ps2_mouse_error_msg и ждать нажатия клавиши
 	mov esi, ps2_mouse_error_msg
 	call println_str
-
 	mov byte [key_queue_top], 0
 	call wait_key
 	mov byte [key_queue_top], 0

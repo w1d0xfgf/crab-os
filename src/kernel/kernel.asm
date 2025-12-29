@@ -30,10 +30,10 @@ protected_start:
 	; IDT
 	call init_idt_and_pic
 
-	sti
-
 	; Инициализировать мышку
 	call mouse_init
+
+	sti
 	
 	; Отключить VGA мигание
 	call disable_blink

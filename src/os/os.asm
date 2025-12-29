@@ -16,6 +16,7 @@ event_loop:
 	; Обновление GUI
 	call update_gui
 	mov byte [vga_attr], 0x07
+	call flush_buffer
 	
 	; Обработка нажатия клавиши
 .handle_key:
@@ -132,6 +133,7 @@ input_done:
 	call init_gui
 	call update_gui
 	mov byte [vga_attr], 0x07
+	call flush_buffer
 
 	; Если ввод пустой, пропустить обработку
 	cmp byte [user_input_top], 0

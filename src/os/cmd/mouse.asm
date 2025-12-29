@@ -65,6 +65,9 @@ MOUSE_Y_LIMIT equ 24*8
 	mov al, 0xDB
 	call print_char
 
+	; Отобразить
+	call flush_buffer
+
 	; Вернуть цвет
 	mov byte [vga_attr], 0x07
 

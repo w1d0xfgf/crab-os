@@ -2,7 +2,7 @@
 ; Драйвер VGA
 ; ------------------------------------------------------------------
 
-VIDEO_MEM equ 0xB8000 ; Адрес VGA текстового буфера
+VIDEO_MEMORY equ 0xB8000 ; Адрес VGA памяти
 
 ; ------------------------------------------------------------------
 
@@ -33,7 +33,7 @@ get_pos_addr:
 	call get_pos_offset
 	mov edi, eax
 	shl edi, 1
-	add edi, VIDEO_MEM
+	add edi, vga_buffer
 
 	ret
 	
@@ -101,7 +101,7 @@ print_str:
 ; Меняет: EAX, ECX, EDI
 clear_screen:
 	mov ecx, 1000			; Счётчик = 1000 (размер экрана 80x25 символов, запись dword за раз)
-	mov edi, VIDEO_MEM		; Адрес VGA текстового буфера
+	mov edi, vga_buffer		; Адрес VGA текстового буфера
 	
 	mov al, ' '				; Символ
 	mov ah, [vga_attr]		; Атрибут
@@ -136,6 +136,19 @@ clear_line:
 	
 	; AX -> EDI, EDI += 2, ECX-- до того как ECX = 0
 	rep stosw
+
+	ret
+
+; ------------------------------------------------------------------
+
+; Копировать буфер в VGA память
+;
+; Меняет: ECX, ESI, EDI
+flush_buffer:
+	mov ecx, 80*25*2/4		; Сколько dword
+	mov esi, vga_buffer		; Откуда
+	mov edi, VIDEO_MEMORY	; Куда
+	rep movsd				; Копировать
 
 	ret
 	
@@ -213,3 +226,6 @@ vga_attr db 0x07
 ; Координаты в символах печати на экран
 pos_x db 0
 pos_y db 0
+
+; Буфер
+vga_buffer times 80*25*2 db 0
