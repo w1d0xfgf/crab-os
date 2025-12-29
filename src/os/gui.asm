@@ -70,21 +70,21 @@ update_gui:
 	mov byte [pos_y], TIME_GUI_POS_Y
 	movzx eax, bl
 	mov [reg8], al
-	call print_reg8
+	call print_reg8_hex
 	
 	mov byte [pos_x], 3 + TIME_GUI_POS_X
 	mov byte [pos_y], TIME_GUI_POS_Y
 	pop ebx
 	movzx eax, bh
 	mov [reg8], al
-	call print_reg8
+	call print_reg8_hex
 	
 	mov byte [pos_x], 0 + TIME_GUI_POS_X
 	mov byte [pos_y], TIME_GUI_POS_Y
 	pop ecx
 	movzx eax, cl
 	mov [reg8], al
-	call print_reg8
+	call print_reg8_hex
 	
 	; ":" во времени
 	mov byte [pos_x], 2 + TIME_GUI_POS_X
@@ -101,21 +101,21 @@ update_gui:
 	pop ecx
 	movzx eax, ch
 	mov [reg8], al
-	call print_reg8
+	call print_reg8_hex
 
 	mov byte [pos_x], 3 + DATE_GUI_POS_X
 	mov byte [pos_y], DATE_GUI_POS_Y
 	pop edx
 	movzx eax, dl
 	mov [reg8], al
-	call print_reg8
+	call print_reg8_hex
 
 	mov byte [pos_x], 6 + DATE_GUI_POS_X
 	mov byte [pos_y], DATE_GUI_POS_Y
 	pop edx
 	movzx eax, dh
 	mov [reg8], al
-	call print_reg8
+	call print_reg8_hex
 	
 	; "/" в дате
 	mov byte [pos_x], 2 + DATE_GUI_POS_X

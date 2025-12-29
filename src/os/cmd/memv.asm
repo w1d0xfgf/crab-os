@@ -22,7 +22,7 @@
 	; Напечатать адрес
 	mov esi, dword [memv_location]
 	mov [reg32], esi
-	call print_reg32
+	call print_reg32_hex
 
 	; Следующая строка
 	inc byte [pos_y]

@@ -1,6 +1,9 @@
 MOUSE_X_LIMIT equ 79*4
 MOUSE_Y_LIMIT equ 24*8
 
+	; Очистить экран
+	call clear_screen
+	
 	; Цвет 0x07 и скрытый курсор
 	mov byte [vga_attr], 0x07
 	mov ah, 00010000b
@@ -18,11 +21,11 @@ MOUSE_Y_LIMIT equ 24*8
 	cmp al, 0x01
 	je .exit
 .skip_key:
-
 	; Очистить экран
 	call clear_screen
 
 	; Текст
+	mov eax, 0
 	mov byte [pos_x], 0
 	mov byte [pos_y], 0
 	mov esi, .msg
@@ -90,6 +93,6 @@ MOUSE_Y_LIMIT equ 24*8
 
 	; Вернуть GUI
 	call init_gui
-
+	
 	ret
 .msg db 'Press <Escape> to exit', 0

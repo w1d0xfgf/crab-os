@@ -272,15 +272,15 @@ gpf:
 	
 	pop eax
 	mov dword [reg32], eax
-	call println_reg32
+	call println_reg32_hex
 
 	pop eax
 	mov dword [reg32], eax
-	call println_reg32
+	call println_reg32_hex
 
 	pop eax
 	mov dword [reg32], eax
-	call println_reg32
+	call println_reg32_hex
 
 	; Остановить процессор
 	cli

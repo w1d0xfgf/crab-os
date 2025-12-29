@@ -27,8 +27,6 @@ protected_start:
 	mov ss, ax
 	mov esp, stack_top
 	
-	call clear_screen
-	
 	; IDT
 	call init_idt_and_pic
 

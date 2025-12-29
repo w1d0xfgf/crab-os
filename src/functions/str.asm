@@ -81,6 +81,56 @@ hex_str_from_al:
 ; ------------------------------------------------------------------
 
 hex_str db '0123456789ABCDEF'
+
+; ------------------------------------------------------------------
+
+; Запись значения EAX в шестнадцатеричном формате в строку
+;
+; Адрес строки: EDI
+; Меняет: EAX, EBX, ECX, EDI	
+str_from_eax:
+	push edi
+
+	; Очистить буфер
+	push eax
+	mov ecx, 10
+	mov edi, str_from_eax_buffer
+	mov al, ' '
+.clear:
+	mov [edi], al
+	inc edi
+	dec ecx
+	jnz .clear
+	pop eax
+
+	mov edi, str_from_eax_buffer + 9
+.loop:
+	; Если EAX = 0, конец
+	test eax, eax
+	jz .done
+
+	; Получить последнюю цифру EAX (EAX /= 10)
+	xor edx, edx
+	mov ecx, 10
+	div ecx
+
+	; Код символа = Код символа '0' + Полученная цифра
+	add edx, '0'
+	mov [edi], dl
+
+	; Следующая итерация
+	dec edi
+	jmp .loop
+.done:
+	; Обрезать лишние пробелы
+	mov esi, str_from_eax_buffer
+	pop edi
+	call trim_str
+	
+	ret
+str_from_eax_buffer:
+	times 10 db ' '
+	db 0
 	
 ; ------------------------------------------------------------------
 

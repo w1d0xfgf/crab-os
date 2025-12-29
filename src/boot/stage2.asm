@@ -5,10 +5,48 @@
 bits 16
 
 ; GDT селекторы
-CODE_SEL      equ 0x08	; Код Ring 0
-DATA_SEL      equ 0x10	; Данные Ring 0
+CODE_SEL	equ 0x08	; Код Ring 0
+DATA_SEL	equ 0x10	; Данные Ring 0
+; 'SMAP'
+SMAP		equ 0x534D4150
 
 start:
+	; Посчитать количество доступной ОЗУ
+
+	; Для первого вызова функции EBX должен быть 0
+	xor ebx, ebx
+.next:
+	; Получить запись из карты памяти
+	mov eax, 0xE820				; Карта памяти
+	mov edx, SMAP				; Обязательно
+	mov ecx, 24					; 24 байта
+	mov di, memory_map_buffer	; Адрес буфера
+	int 0x15
+
+	; Если ошибка, завершить
+	jc .done
+
+	; Если EAX не 'SMAP', завершить
+	cmp eax, SMAP
+	jne .done
+
+	; Если тип не 1 (свободная память), пропустить
+	cmp dword [memory_map_buffer + 16], 1
+	jne .skip
+
+	; Добавить к итоговому количеству ОЗУ 
+	mov eax, [memory_map_buffer + 8]
+	shr eax, 10
+	add [total_ram], eax
+	adc dword [total_ram + 4], 0
+	mov eax, [memory_map_buffer + 12]
+	shl eax, 22
+	add [total_ram + 4], eax
+.skip:
+	test ebx, ebx
+	jnz .next
+.done:
+
 	; Отключить прерывания
 	cli
 
@@ -61,3 +99,12 @@ gdt_end:
 gdt_descriptor:
 	dw gdt_end - gdt_start - 1 	; Лимит
 	dd gdt_start 				; Адрес (32 бит)
+
+; ------------------------------------------------------------------
+
+memory_map_buffer:
+	dq 0
+	dq 0
+	dd 0
+	dd 0
+total_ram dq 0

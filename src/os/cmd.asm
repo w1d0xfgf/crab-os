@@ -52,7 +52,7 @@ pit_cmd:
 	mov [reg32], eax
 	mov byte [pos_x], 0
 	mov byte [pos_y], 2
-	call print_reg32
+	call print_reg32_hex
 
 	ret
 pit_cmd_str db 'pit', 0
@@ -75,15 +75,10 @@ p1_won_msg db 'Player 1 won!', 0
 p2_won_msg db 'Player 2 won!', 0
 key_press_msg db 'Press any key...', 0
 
-; Вывод следующего числа фибоначчи в формате "0xXXXXXXXX"
+; Вывод следующего числа фибоначчи
 fib_cmd:
-	; "0x"
-	mov byte [pos_x], 0
-	mov byte [pos_y], 2
-	mov al, '0'
-	call print_char
-	mov al, 'x'
-	call print_char
+	mov eax, 2
+	call clear_line
 	
 	; F2 = F1 + F0
 	mov eax, [fib_f0]
@@ -100,6 +95,8 @@ fib_cmd:
 	mov [fib_f1], eax
 
 	; Печать
+	mov byte [pos_x], 0
+	mov byte [pos_y], 2
 	mov [reg32], eax
 	call print_reg32
 	
@@ -131,7 +128,7 @@ cmd_list_msg:
 	db 'fib     - Print the next fibonacci number in hexadecimal', 13, 10
 	db 'pong    - Play Pong', 13, 10
 	db 'help    - Show this list', 13, 10
-	db 'info    - Print info about the CPU', 13, 10
+	db 'info    - Print info about the system', 13, 10
 	db 'memv    - View memory', 13, 10
 	db 'mouse   - For testing', 13, 10
 	db 'panic   - Cause a GPF (General Protection Fault)', 13, 10
@@ -140,25 +137,21 @@ cmd_list_msg:
 	db 'restart - Restart the computer', 13, 10
 	db 'version - Show OS version', 0
 	
-; Вывод случайного числа в формате "0xXXXXXXXX"
+; Вывод случайного числа
 rand_cmd:
-	; "0x"
+	mov eax, 2
+	call clear_line
+
+	call rng_next
 	mov byte [pos_x], 0
 	mov byte [pos_y], 2
-	mov al, '0'
-	call print_char
-	mov al, 'x'
-	call print_char
-	
-	; Число
-	call rng_next
 	mov [reg32], eax
 	call print_reg32
 	
 	ret
 rand_cmd_str db 'rand', 0
 
-; Вывод информации об процессоре на экран
+; Вывод информации об системе на экран
 info_cmd:
 	mov byte [pos_x], 0
 	mov byte [pos_y], 2
@@ -195,6 +188,12 @@ info_cmd:
 	mov dword [esi], ecx
 	add esi, 4
 
+	; Печать cpu_msg
+	mov byte [vga_attr], 0xA0
+	mov esi, cpu_msg
+	call println_str
+	mov byte [vga_attr], 0x07
+
 	; Печать строки продавца
 	mov esi, vendor_str_msg
 	call print_str
@@ -209,7 +208,7 @@ info_cmd:
 	push ax
 	and al, 00001111b
 	mov [reg8], al
-	call println_reg8
+	call println_reg8_hex
 
 	; Получение и печать модели
 	mov esi, model_msg
@@ -218,21 +217,21 @@ info_cmd:
 	and al, 11110000b
 	shr al, 4
 	mov [reg8], al
-	call println_reg8
+	call println_reg8_hex
 
 	; Получение и печать семьи
 	mov esi, family_msg
 	call print_str
 	and ah, 00001111b
 	mov [reg8], ah
-	call println_reg8
+	call println_reg8_hex
 	
-	; Получение информации про FPU
-	mov eax, 1
-	cpuid
 	; Вывести fpu_msg
 	mov esi, fpu_msg
 	call print_str
+	; Получение информации про FPU
+	mov eax, 1
+	cpuid
 	; Первый бит DL 1 -> FPU есть
 	and dl, 00000001b
 	test dl, dl
@@ -241,34 +240,63 @@ info_cmd:
 	; Вывести yes_msg если FPU есть
 	mov byte [vga_attr], 0x02
 	mov esi, yes_msg
-	call print_str
+	call println_str
 	jmp .fpu_endif
 .fpu_not_present:	
 	; Вывести no_msg если FPU нет
 	mov byte [vga_attr], 0x04
 	mov esi, no_msg
-	call print_str
+	call println_str
 .fpu_endif:
+	; Печать mem_msg
+	mov byte [vga_attr], 0xC0
+	mov esi, mem_msg
+	call println_str
+	mov byte [vga_attr], 0x07
+
+	; Печать mem_amount_msg
+	mov esi, mem_amount_msg
+	call print_str
+	
+	; Печать количества памяти в МБ в десятичном формате
+	mov eax, dword [total_ram]
+	mov ebx, dword [total_ram + 4]
+	shrd eax, ebx, 10
+	mov dword [reg32], eax
+	call print_reg32
+	inc byte [pos_x]
+
+	; 'MB'
+	mov al, 'M'
+	call print_char
+	mov al, 'B'
+	call print_char
+
 	jmp .end
 
 .not_available:
 	mov byte [vga_attr], 0x04
 	mov esi, cpuid_not_available
 	call print_str
-
 .end:
 	mov byte [vga_attr], 0x07
 	ret
 info_cmd_str db 'info', 0
 cpuid_not_available db 'CPUID is not available', 0
-vendor_str_msg db 'Vendor:        ', 0
+cpu_msg db '  CPU  ', 0
+vendor_str_msg db ' ', 0xF9, ' Vendor:        ', 0
 vendor_str times 13 db 0
-stepping_id_msg db 'Stepping ID:   ', 0
-model_msg db 'Model:         ', 0
-family_msg db 'Family:        ', 0
-fpu_msg db 'FPU present?:  ', 0
+stepping_id_msg db ' ', 0xF9, ' Stepping ID:   ', 0
+model_msg db ' ', 0xF9, ' Model:         ', 0
+family_msg db ' ', 0xF9, ' Family:        ', 0
+fpu_msg db ' ', 0xF9, ' FPU present?:  ', 0
 yes_msg db 'Yes', 0
 no_msg db 'No', 0
+mem_msg db '  MEMORY  ', 0
+mem_amount_msg: db ' ', 0xF9, ' Memory amount: ', 0
+mem_amount:
+	times 10 db ' '
+	db 0
 
 ; Сделать GPF (General protection fault)
 panic_cmd:
@@ -281,10 +309,7 @@ panic_cmd_str db 'panic', 0
 
 ; Перезапустить компьютер
 restart_cmd:
-.wait_kbc:
-	in al, 0x64		; Статусный порт i8042
-	test al, 0x02	; Входной буфер занят?
-	jnz .wait_kbc	; Ожидание
+	call ps2_wait_wr
 
 	; Перезагрузка (0xFE в порт 0x64)
 	mov al, 0xFE	
