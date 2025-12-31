@@ -2,13 +2,16 @@
 ; Stage 2 загрузчика ядра
 ; ------------------------------------------------------------------
 
+; Компиляция для 16 бит
 bits 16
 
-; GDT селекторы
-CODE_SEL	equ 0x08	; Код Ring 0
-DATA_SEL	equ 0x10	; Данные Ring 0
-; 'SMAP'
-SMAP		equ 0x534D4150
+; Смещение 0x8000 к адресам
+org 0x8000
+
+; Константы
+CODE_SEL equ 0x08 ; GDT селектор кода Ring 0
+DATA_SEL equ 0x10 ; GDT селектор данных Ring 0
+SMAP equ 0x534D4150 ; 'SMAP'
 
 start:
 	; Посчитать количество доступной ОЗУ
@@ -46,6 +49,11 @@ start:
 	test ebx, ebx
 	jnz .next
 .done:
+	; Сохранить total_ram
+	mov eax, [total_ram]
+	mov dword [0x500], eax
+	mov eax, [total_ram + 4]
+	mov dword [0x504], eax
 
 	; Отключить прерывания
 	cli
@@ -61,8 +69,8 @@ start:
 	or eax, 1
 	mov cr0, eax
 
-	; Far-прыжок в ядро
-	jmp CODE_SEL:protected_start
+	; Far-прыжок в ядро для обновления Code Segment
+	jmp CODE_SEL:pm_entry
 
 ; ------------------------------------------------------------------
 
@@ -96,15 +104,27 @@ gdt_start:
 	db 0x00
 gdt_end:
 
+; Дескриптор GDT
 gdt_descriptor:
 	dw gdt_end - gdt_start - 1 	; Лимит
 	dd gdt_start 				; Адрес (32 бит)
 
 ; ------------------------------------------------------------------
 
+; Буфер одной записи в карте памяти
 memory_map_buffer:
 	dq 0
 	dq 0
 	dd 0
 	dd 0
+
+; Счётчик ОЗУ в КБ
 total_ram dq 0
+
+; ------------------------------------------------------------------
+
+; Заполнить до 512 байт, ядро точно будет по адресу 0x8200
+times 512 - ($ - $$) db 0 
+
+; Ядро в памяти сразу после Stage 2
+pm_entry:

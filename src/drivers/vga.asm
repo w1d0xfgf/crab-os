@@ -2,9 +2,27 @@
 ; Драйвер VGA
 ; ------------------------------------------------------------------
 
+bits 32
+
+global print_char
+global print_str
+global clear_screen
+global clear_line
+global flush_buffer
+global set_cursor
+global disable_blink
+global cursor_to_pos
+
+global vga_attr
+global pos_x
+global pos_y
+
 VIDEO_MEMORY equ 0xB8000 ; Адрес VGA памяти
 
 ; ------------------------------------------------------------------
+
+; Код
+section .text
 
 ; Получить смещение в символах которое соответствует текущей позиции
 ;
@@ -220,6 +238,9 @@ set_cursor:
 
 ; ------------------------------------------------------------------
 
+; Данные
+section .data
+
 ; VGA атрибут (цвет) печати на экран
 vga_attr db 0x07
 
@@ -227,5 +248,8 @@ vga_attr db 0x07
 pos_x db 0
 pos_y db 0
 
+; Неинициализированные данные
+section .bss
+
 ; Буфер
-vga_buffer times 80*25*2 db 0
+vga_buffer resb 80*25*2

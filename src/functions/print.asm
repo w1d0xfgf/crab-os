@@ -2,6 +2,32 @@
 ; Функции для печати на экран
 ; ------------------------------------------------------------------
 
+bits 32
+
+extern print_str
+extern hex_str_from_eax
+extern hex_str_from_al
+extern str_from_eax
+
+extern pos_x
+extern pos_y
+
+global println_str
+global print_reg32_hex
+global println_reg32_hex
+global print_reg8_hex
+global println_reg8_hex
+global print_reg32
+global println_reg32
+
+global reg32
+global reg8
+
+; ------------------------------------------------------------------
+
+; Код
+section .text
+
 ; Печать строки на экран с \r и \n
 ;
 ; Адрес строки: ESI
@@ -29,8 +55,6 @@ print_reg32_hex:
 	call print_str	
 	
 	ret
-reg32 dd 0
-out_str_reg32_hex db '00000000', 0
 
 ; ------------------------------------------------------------------
 
@@ -61,9 +85,7 @@ print_reg8_hex:
 	call print_str			
 	
 	ret
-reg8 db 0
-out_str_reg8_hex db '00', 0
-	
+
 ; ------------------------------------------------------------------
 
 ; Печать reg8 в шестнадцатеричном формате с \r и \n
@@ -93,9 +115,6 @@ print_reg32:
 	call print_str	
 	
 	ret
-out_str_reg32:
-	times 10 db ' '
-	db 0
 
 ; ------------------------------------------------------------------
 
@@ -108,3 +127,17 @@ println_reg32:
 	inc byte [pos_y]		; Следующая линия
 	
 	ret
+
+; ------------------------------------------------------------------
+
+; Данные
+section .data
+
+out_str_reg32_hex db '00000000', 0
+out_str_reg8_hex db '00', 0
+out_str_reg32:
+	times 10 db ' '
+	db 0
+
+reg32 dd 0
+reg8 db 0

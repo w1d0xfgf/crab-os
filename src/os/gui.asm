@@ -2,6 +2,29 @@
 ; GUI
 ; ------------------------------------------------------------------
 
+bits 32
+
+extern clear_screen
+extern cursor_to_pos
+extern print_str
+extern print_reg8_hex
+extern print_char
+extern println_str
+extern get_rtc_time
+
+extern vga_attr
+extern pos_x
+extern pos_y
+extern reg8
+
+global init_gui
+global update_gui
+
+; ------------------------------------------------------------------
+
+; Код
+section .text
+
 ; Инициализирует весь GUI
 ;
 ; Меняет: EAX, EBX, ECX, EDX, ESI, EDI
@@ -30,9 +53,8 @@ init_gui:
 	call cursor_to_pos
 	
 	ret
-; GUI ОС
-os_gui_init:
-	db ' CrabOS ', 0xB3, '                                                   ', 0xB3, '                   ', 0
+
+; ------------------------------------------------------------------
 
 ; Обновляет GUI времени и даты
 ;
@@ -134,3 +156,12 @@ update_gui:
 	mov [pos_y], ah
 	
 	ret
+
+; ------------------------------------------------------------------
+
+; Данные
+section .data
+
+; GUI ОС
+os_gui_init:
+	db ' CrabOS ', 0xB3, '                                                   ', 0xB3, '                   ', 0

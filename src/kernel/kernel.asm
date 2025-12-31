@@ -2,18 +2,28 @@
 ; Ядро
 ; ------------------------------------------------------------------
 
-org 0x8000
-
-; Загрузчик ядра
-%include "src/boot/stage2.asm"
-
+; Компиляция для 32 бит
 bits 32
 
-; Interrupt Descriptor Table
-%include "src/kernel/idt.asm" 
+%include "src/const.asm"
+
+extern set_cursor
+extern mouse_init
+extern disable_blink
+extern init_idt_and_pic
+extern os_entry
+
+global kernel_entry
+global scancode_to_ascii
+global scancode_to_ascii_shift
+global halt
+global total_ram
+
+; Код
+section .text
 
 ; Стартовая точка ядра
-protected_start:
+kernel_entry:
 	cli
 
 	; Сегменты
@@ -26,56 +36,47 @@ protected_start:
 	; Стек
 	mov ss, ax
 	mov esp, stack_top
-	
+
 	; IDT
 	call init_idt_and_pic
 
 	; Инициализировать мышку
 	call mouse_init
 
+	; Получить total_ram
+	mov eax, dword [0x500]
+	mov [total_ram], eax
+	mov eax, dword [0x504]
+	mov [total_ram + 4], eax
+
 	sti
 	
 	; Отключить VGA мигание
 	call disable_blink
-	
+
 	; Установить форму курсора
 	mov ah, 00000000b
 	call set_cursor
 
-; Сама ОС (GUI, ввод, и т. д.)
-%include "src/os/os.asm"
-
-done:
-	hlt
-	jmp done
-
-; ------------------------------------------------------------------
-
-; Драйвер VGA
-%include "src/drivers/vga.asm"
-
-; Драйвер Real Time Clock
-%include "src/drivers/rtc.asm"
-
-; Драйвер PC Speaker
-%include "src/drivers/speaker.asm"
-
-; ------------------------------------------------------------------
-
-; Функции для печати на экран
-%include "src/functions/print.asm"
-
-; Функции для работы со строками
-%include "src/functions/str.asm"
+	jmp os_entry
 	
-; ------------------------------------------------------------------
+halt:
+	hlt
+	jmp halt
 
-bits 32
+; ------------------------------------------------------------------
 
 ; Данные
+section .data
+
 %include "src/kernel/data.asm"
+
+total_ram dq 0
+
+; Неинициализированные данные
+section .bss
 
 ; 4 КиБ стек
 stack_bottom:
-	times 4096 db 0
+	resb 4096
 stack_top:

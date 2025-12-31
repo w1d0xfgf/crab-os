@@ -2,6 +2,22 @@
 ; Драйвер клавиатуры
 ; ------------------------------------------------------------------
 
+bits 32
+
+%include "src/const.asm"
+
+global keyboard_stub
+global wait_key
+
+global key_queue
+global key_queue_top
+global keys_pressed
+
+; ------------------------------------------------------------------
+
+; Код
+section .text
+
 ; ISR клавиатуры
 keyboard_stub:
 	; Сохранить состояние
@@ -98,6 +114,9 @@ wait_key:
 	ret
 
 ; ------------------------------------------------------------------
+
+; Данные
+section .data
 
 KEY_QUEUE_SIZE equ 16               ; Размер очереди
 key_queue times KEY_QUEUE_SIZE db 0	; Очередь для нажатых клавиш

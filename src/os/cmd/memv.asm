@@ -2,8 +2,8 @@
 	mov ah, 00010000b
 	call set_cursor
 
-	; Изначальная позиция это метка protected_start
-	mov ebx, protected_start
+	; Изначальная позиция это метка kernel_entry
+	mov ebx, kernel_entry
 	mov dword [memv_location], ebx
 .reload:
 	; Очистить экран и сбросить позицию
@@ -31,14 +31,14 @@
 	; Переместить адрес в ESI
 	mov esi, dword [memv_location]
 
-	; 16 итераций
-	mov ecx, 16
+	; Количество итераций
+	mov ecx, 20
 .loop:
 	; Сохранить ECX
 	push ecx
 	
-	; 64 итерации
-	mov ecx, 64
+	; Количество итераций
+	mov ecx, 0x40
 .loop2:
 	; Загрузить символ в AL из ESI
 	lodsb
@@ -102,16 +102,16 @@
 	jmp .check_key
 
 .forward:
-	add dword [memv_location], 64
+	add dword [memv_location], 0x040
 	jmp .reload
 .fast_forward:
-	add dword [memv_location], 4096
+	add dword [memv_location], 0x400
 	jmp .reload
 .backward:
-	sub dword [memv_location], 64
+	sub dword [memv_location], 0x040
 	jmp .reload
 .fast_backward:
-	sub dword [memv_location], 4096
+	sub dword [memv_location], 0x400
 	jmp .reload
 .exit:
 	; Вернуть курсор
@@ -122,6 +122,3 @@
 	call init_gui
 
 	ret
-memv_location dd 0
-memv_help db 'W/S: Up/Down  U/D: Fast Up/Down', 0
-adress_msg db 'Adress: ', 0

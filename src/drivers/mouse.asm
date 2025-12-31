@@ -2,6 +2,28 @@
 ; Драйвер PS/2 мышки
 ; ------------------------------------------------------------------
 
+bits 32
+
+%include "src/const.asm"
+
+extern println_str
+extern wait_key
+
+extern key_queue_top
+
+global mouse_stub
+global mouse_init
+global ps2_wait_wr
+
+global mouse_x
+global mouse_y
+global mouse_state
+
+; ------------------------------------------------------------------
+
+; Код
+section .text
+
 ; ISR мыши
 mouse_stub:
 	; Сохранить состояние
@@ -77,17 +99,7 @@ mouse_handler:
 	mov byte [mouse_packet_index], 0
 	ret
 
-mouse_packet_index db 0
-mouse_packet times 3 db 0
-mouse_x dw 0
-mouse_y dw 0
-mouse_state db 0
-
 ; ------------------------------------------------------------------
-
-; Настройки мыши
-MOUSE_RESOLUTION equ 2
-MOUSE_SAMPLE_RATE equ 60
 
 ; Инициализация PS/2 мыши
 ; 
@@ -185,8 +197,6 @@ mouse_init:
 
 	ret
 
-ps2_mouse_error_msg db 'PS/2 mouse initialization error', 0
-
 ; ------------------------------------------------------------------
 
 ; Подождать перед отсылкой команды контроллеру 8042 (порт 0x64/0x60)
@@ -214,3 +224,16 @@ ps2_wait_rd:
 	jmp .loop
 .done:
 	ret
+
+; ------------------------------------------------------------------
+
+; Данные
+section .data
+
+mouse_packet_index db 0
+mouse_packet times 3 db 0
+mouse_x dw 0
+mouse_y dw 0
+mouse_state db 0
+
+ps2_mouse_error_msg db 'PS/2 mouse initialization error', 0

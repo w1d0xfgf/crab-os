@@ -310,17 +310,17 @@
 	jmp .update
 
 .end_p1:
-	; Вывести p1_won_msg на экран
+	; Вывести p1_win_msg на экран
 	mov byte [pos_x], 29
 	mov byte [pos_y], 8
-	mov esi, p1_won_msg
+	mov esi, p1_win_msg
 	call print_str
 	jmp .end
 .end_p2:
-	; Вывести p2_won_msg на экран
+	; Вывести p2_win_msg на экран
 	mov byte [pos_x], 29
 	mov byte [pos_y], 8
-	mov esi, p2_won_msg
+	mov esi, p2_win_msg
 	call print_str
 .end:
 	; Очистить очередь нажатий
@@ -331,6 +331,7 @@
 	mov byte [pos_y], 10
 	mov esi, key_press_msg
 	call print_str
+	call flush_buffer
 
 	; Подождать нажатие клавиши и после нажатия очистить очередь
 	call wait_key
@@ -428,3 +429,17 @@
 	mov byte [ball_dir], 3
 .ball_left_collide_done:
 	ret
+
+p1_paddle_pos db 0			; Позиция ракетки игрока 1
+p2_paddle_pos db 0			; Позиция ракетки игрока 2
+p1_paddle_pos_prev db 0		; Предыдущая позиция ракетки игрока 1
+p2_paddle_pos_prev db 0		; Предыдущая позиция ракетки игрока 2
+ball_pos_x db 0				; Позиция мячика
+ball_pos_y db 0				;
+ball_pos_x_prev db 0		; Предыдущая позиция мячика
+ball_pos_y_prev db 0		;
+ball_dir db 0 				; Направление мячика: 0 - влево вверх, 1 - вправо вверх, 2 - влево вниз, 3 - вправо вниз
+last_update_ticks dd 0
+p1_win_msg db 'Player 1 wins!', 0
+p2_win_msg db 'Player 2 wins!', 0
+key_press_msg db 'Press any key...', 0

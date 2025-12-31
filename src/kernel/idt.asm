@@ -2,17 +2,36 @@
 ; Interrupt Descriptor Table
 ; ------------------------------------------------------------------
 
-PIC1		equ 0x20 ; Master PIC порт команд
-PIC1_DATA	equ 0x21 ; Master PIC порт данных
-PIC2		equ 0xA0 ; Slave PIC порт команд
-PIC2_DATA	equ 0xA1 ; Slave PIC порт данных
-PIC_EOI		equ 0x20 ; PIC EOI
+bits 32
+
+%include "src/const.asm"
+
+global init_idt_and_pic
+
+extern set_cursor
+extern println_str
+extern println_reg32_hex
+extern clear_screen
+extern flush_buffer
+extern pit_stub
+extern keyboard_stub
+extern mouse_stub
+
+extern pos_x
+extern pos_y
+extern vga_attr
+extern reg32
 
 ; ------------------------------------------------------------------
 
 ; Макрос для ISR exception прерываний
 %macro isr 2
 	cli
+
+	; Установить сегменты
+	mov ax, DATA_SEL
+	mov ds, ax
+	mov es, ax
 
 	; Скрыть курсор
 	mov ah, 00010000b
@@ -40,26 +59,10 @@ PIC_EOI		equ 0x20 ; PIC EOI
 	hlt
 %endmacro
 
-panic_msg:
-	db '      PANIC!          ', 13, 10
-	db '                      ', 13, 10
-	db '      _~^~^~_         ', 13, 10
-	db '  \) /  o o  \ (/     ', 13, 10
-	db "    '_   ", 0x7F, "   _'       ", 13, 10
-	db "    / '-----' \       ", 0
-
 ; ------------------------------------------------------------------
 
-idt:
-	times 256 dq 0	; Все записи изначально пустые
-idt_end:
-
-; Данные для загрузки IDT
-idt_descriptor:
-	dw idt_end - idt - 1
-	dd idt
-
-; ------------------------------------------------------------------
+; Код
+section .text
 
 ; Установить одну запись IDT
 ;
@@ -231,15 +234,18 @@ init_idt_and_pic:
 
 ; ISR ошибки деления
 div_err: isr div_err_msg, 0x1F
-div_err_msg: db 'Division error', 0
 
 ; ISR Non-Maskable Interrupt
 nmi: isr nmi_msg, 0x4F
-nmi_msg: db 'Non-maskable Interrupt', 0
 
 ; ISR General Protection Fault
 gpf:
 	cli
+
+	; Установить сегменты
+	mov ax, DATA_SEL
+	mov ds, ax
+	mov es, ax
 
 	; Скрыть курсор
 	mov ah, 00010000b
@@ -289,26 +295,9 @@ gpf:
 	; Остановить процессор
 	cli
 	hlt
-gpf_msg: db 'General Protection Fault', 0
 
 ; ISR Page Fault
 page_fault: isr page_fault_msg, 0x1F
-page_fault_msg: db 'Page Fault', 0
-
-; ------------------------------------------------------------------
-
-; ISR PIT
-%include "src/drivers/pit.asm"
-
-; ------------------------------------------------------------------
-
-; ISR клавиатуры
-%include "src/drivers/keyboard.asm"
-
-; ------------------------------------------------------------------
-
-; ISR мыши
-%include "src/drivers/mouse.asm"
 
 ; ------------------------------------------------------------------
 
@@ -332,3 +321,31 @@ isr_empty_slave:
 	pop eax
 
 	iretd
+
+; ------------------------------------------------------------------
+
+; Данные
+section .data
+
+panic_msg:
+	db '      PANIC!          ', 13, 10
+	db '                      ', 13, 10
+	db '      _~^~^~_         ', 13, 10
+	db '  \) /  o o  \ (/     ', 13, 10
+	db "    '_   ", 0x7F, "   _'       ", 13, 10
+	db "    / '-----' \       ", 0
+
+div_err_msg: db 'Division error', 0
+nmi_msg: db 'Non-maskable Interrupt', 0
+gpf_msg: db 'General Protection Fault', 0
+page_fault_msg: db 'Page Fault', 0
+
+; IDT
+idt:
+	times 256 dq 0	; Все записи изначально пустые
+idt_end:
+
+; Дескриптор IDT
+idt_descriptor:
+	dw idt_end - idt - 1
+	dd idt

@@ -2,31 +2,42 @@
 ; Драйвер Programmable Interval Timer
 ; ------------------------------------------------------------------
 
-PIT_FREQ equ 10000	; Частота PIT
+bits 32
+
+%include "src/const.asm"
+
+global pit_stub
+global sleep_ticks
+
+global pit_ticks
 
 ; ------------------------------------------------------------------
 
+; Код
+section .text
+
 ; ISR PIT прерывания
 pit_stub:
+	; Сохранить контекст
 	pushad
 	push ds
 
+	; Установить сегменты
 	mov ax, DATA_SEL
 	mov ds, ax
 
-	; Сохранить контекст
+	; Увеличить счётчик
 	inc dword [pit_ticks]
 	
 	; PIC EOI
 	mov al, PIC_EOI
 	out PIC1, al
 	
+	; Восстановить контекст
 	pop ds
 	popad
 
 	iretd
-	
-pit_ticks dd 0	; Количество тиков PIT
 
 ; ------------------------------------------------------------------
 
@@ -50,3 +61,9 @@ sleep_ticks:
 	jb .wait
 	
 	ret
+
+; ------------------------------------------------------------------
+
+section .data
+
+pit_ticks dd 0	; Количество тиков PIT

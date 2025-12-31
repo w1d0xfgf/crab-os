@@ -129,3 +129,19 @@
 .end:
 	mov byte [vga_attr], 0x07
 	ret
+
+cpuid_not_available db 'CPUID is not available', 0
+cpu_msg db '  CPU  ', 0
+vendor_str_msg db ' ', 0xF9, ' Vendor:        ', 0
+vendor_str times 13 db 0
+stepping_id_msg db ' ', 0xF9, ' Stepping ID:   ', 0
+model_msg db ' ', 0xF9, ' Model:         ', 0
+family_msg db ' ', 0xF9, ' Family:        ', 0
+fpu_msg db ' ', 0xF9, ' FPU present?:  ', 0
+yes_msg db 'Yes', 0
+no_msg db 'No', 0
+mem_msg db '  MEMORY  ', 0
+mem_amount_msg: db ' ', 0xF9, ' Memory amount: ', 0
+mem_amount:
+	times 10 db ' '
+	db 0

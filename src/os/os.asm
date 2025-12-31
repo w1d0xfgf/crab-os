@@ -1,5 +1,45 @@
+bits 32
+
+extern version_cmd
+extern mouse_cmd
+extern beep_cmd
+extern memv_cmd
+extern cls_cmd
+extern pit_cmd
+extern pong_cmd
+extern fib_cmd
+extern help_cmd
+extern rand_cmd
+extern info_cmd
+extern panic_cmd
+extern restart_cmd
+extern init_gui
+extern update_gui
+extern get_rtc_time
+extern seed_rng
+extern flush_buffer
+extern print_char
+extern print_str
+extern cursor_to_pos
+
+extern vga_attr
+extern pos_x
+extern pos_y
+extern scancode_to_ascii
+extern scancode_to_ascii_shift
+extern key_queue_top
+extern keys_pressed
+extern compare_strs
+extern trim_str
+extern key_queue
+
+global os_entry
+
+; Код
+section .text
+
 ; Запуск
-startup:
+os_entry:
 	; Инициализизовать GUI
 	call init_gui
 
@@ -240,12 +280,6 @@ input_done:
 	mov [pos_x], al
 .ret:
 	ret
-invalid_cmd_msg:
-	db 'Invalid command.', 13, 10
-	db 'Type "help" for a list of commands.', 0
-
-; Команды
-%include "src/os/cmd.asm"
 
 ; ------------------------------------------------------------------
 
@@ -266,13 +300,8 @@ reset_user_input:
 
 ; ------------------------------------------------------------------
 
-; GUI
-%include "src/os/gui.asm"
-
-; PRNG (xoshiro128**)
-%include "src/functions/rng.asm"
-
-; ------------------------------------------------------------------
+; Данные
+section .data
 
 ; Размер строки ввода в байтах
 USER_INPUT_SIZE_BYTES equ 32
@@ -280,5 +309,25 @@ USER_INPUT_SIZE_BYTES equ 32
 ; Строка которую ввёл пользователь
 user_input: times USER_INPUT_SIZE_BYTES db 0
 user_input_top: db 0
+
 ; Обрезанная строка (без лишних пробелов, \n и \r)
 user_input_trimmed: times USER_INPUT_SIZE_BYTES db 0
+
+invalid_cmd_msg:
+	db 'Invalid command.', 13, 10
+	db 'Type "help" for a list of commands.', 0
+
+; Команды
+version_cmd_str db 'version', 0
+mouse_cmd_str db 'mouse', 0
+beep_cmd_str db 'beep', 0
+memv_cmd_str db 'memv', 0
+cls_cmd_str db 'cls', 0
+pit_cmd_str db 'pit', 0
+pong_cmd_str db 'pong', 0
+fib_cmd_str db 'fib', 0
+help_cmd_str db 'help', 0
+rand_cmd_str db 'rand', 0
+info_cmd_str db 'info', 0
+panic_cmd_str db 'panic', 0
+restart_cmd_str db 'restart', 0

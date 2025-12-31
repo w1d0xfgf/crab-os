@@ -28,7 +28,7 @@ MOUSE_Y_LIMIT equ 24*8
 	mov eax, 0
 	mov byte [pos_x], 0
 	mov byte [pos_y], 0
-	mov esi, .msg
+	mov esi, escape_msg
 	call print_str
 
 	; Курсор
@@ -98,4 +98,3 @@ MOUSE_Y_LIMIT equ 24*8
 	call init_gui
 	
 	ret
-.msg db 'Press <Escape> to exit', 0
