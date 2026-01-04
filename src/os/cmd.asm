@@ -59,8 +59,6 @@ section .text
 ; Версия ОС
 version_cmd:
 	mov esi, version_str
-	mov byte [pos_x], 0
-	mov byte [pos_y], 2
 	call print_str
 
 	ret
@@ -108,8 +106,6 @@ cls_cmd:
 pit_cmd:
 	mov eax, [pit_ticks]
 	mov [reg32], eax
-	mov byte [pos_x], 0
-	mov byte [pos_y], 2
 	call print_reg32
 
 	ret
@@ -139,8 +135,6 @@ fib_cmd:
 	mov [fib_f1], eax
 
 	; Печать
-	mov byte [pos_x], 0
-	mov byte [pos_y], 2
 	mov [reg32], eax
 	call print_reg32
 	
@@ -158,8 +152,6 @@ fib_cmd:
 ; Вывод списка команд
 help_cmd:
 	mov esi, cmd_list_msg
-	mov byte [pos_x], 0
-	mov byte [pos_y], 2
 	call print_str
 	
 	ret
@@ -169,8 +161,6 @@ help_cmd:
 ; Вывод случайного числа
 rand_cmd:
 	call rng_next
-	mov byte [pos_x], 0
-	mov byte [pos_y], 2
 	mov [reg32], eax
 	call print_reg32
 	

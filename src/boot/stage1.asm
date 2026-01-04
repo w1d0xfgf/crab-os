@@ -20,10 +20,6 @@ start:
 
 	; Сохранить номер загрузочного диска (DL от BIOS)
 	mov [boot_drive], dl
-
-	; Напечатать boot_msg
-	mov si, boot_msg
-	call print
 	
 	; Загрузить Stage 2 с ядром в 0x0000:0x8000
 	mov bx, 0x8000			; Смещение
@@ -73,7 +69,6 @@ print:
 ; Данные
 boot_drive db 0
 disk_err_msg db 'Disk read error', 0
-boot_msg db 'CrabOS is booting...', 0
 
 times 510 - ($ - $$) db 0 ; Заполнить до 510 байт
 dw 0xAA55 ; Ещё 2 байта -- сигнатура: 0x55, 0xAA (обязательно для некоторых BIOSов)

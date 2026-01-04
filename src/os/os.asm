@@ -188,6 +188,9 @@ input_done:
 	mov al, [pos_x]
 	mov ah, [pos_y]
 	push ax
+
+	mov byte [pos_x], 0
+	mov byte [pos_y], 2
 	
 	; Команда panic
 	command panic_cmd_str

@@ -9,22 +9,27 @@ bits 16
 org 0x8000
 
 ; Константы
-CODE_SEL equ 0x08 ; GDT селектор кода Ring 0
-DATA_SEL equ 0x10 ; GDT селектор данных Ring 0
-SMAP equ 0x534D4150 ; 'SMAP'
+CODE_SEL equ 0x08		; GDT селектор кода Ring 0
+DATA_SEL equ 0x10		; GDT селектор данных Ring 0
+SMAP equ 0x534D4150		; 'SMAP'
 
 start:
-	; Посчитать количество доступной ОЗУ
+	; Получить карту памяти
+
+	; Адрес
+	mov di, [0x8200 + 2]
 
 	; Для первого вызова функции EBX должен быть 0
 	xor ebx, ebx
 .next:
 	; Получить запись из карты памяти
-	mov eax, 0xE820				; Карта памяти
-	mov edx, SMAP				; Обязательно
-	mov ecx, 24					; 24 байта
-	mov di, memory_map_buffer	; Адрес буфера
-	int 0x15
+	push di				; Сохранить адрес
+	mov eax, 0xE820		; Функция получения карты памяти
+	mov edx, SMAP		; Обязательно
+	mov ecx, 24			; 24 байта
+	int 0x15			; BIOS вызов
+	pop di				; Вернуть адрес
+	add di, 24			; Следующая запись в таблице
 
 	; Если ошибка, завершить
 	jc .done
@@ -33,27 +38,10 @@ start:
 	cmp eax, SMAP
 	jne .done
 
-	; Если тип не 1 (свободная память), пропустить
-	cmp dword [memory_map_buffer + 16], 1
-	jne .skip
-
-	; Добавить к итоговому количеству ОЗУ 
-	mov eax, [memory_map_buffer + 8]
-	shr eax, 10
-	add [total_ram], eax
-	adc dword [total_ram + 4], 0
-	mov eax, [memory_map_buffer + 12]
-	shl eax, 22
-	add [total_ram + 4], eax
-.skip:
+	; Следующая итерация
 	test ebx, ebx
 	jnz .next
 .done:
-	; Сохранить total_ram
-	mov eax, [total_ram]
-	mov dword [0x500], eax
-	mov eax, [total_ram + 4]
-	mov dword [0x504], eax
 
 	; Отключить прерывания
 	cli
@@ -111,19 +99,7 @@ gdt_descriptor:
 
 ; ------------------------------------------------------------------
 
-; Буфер одной записи в карте памяти
-memory_map_buffer:
-	dq 0
-	dq 0
-	dd 0
-	dd 0
-
-; Счётчик ОЗУ в КБ
-total_ram dq 0
-
-; ------------------------------------------------------------------
-
-; Заполнить до 512 байт, ядро точно будет по адресу 0x8200
+; Заполнить до 512 байт
 times 512 - ($ - $$) db 0 
 
 ; Ядро в памяти сразу после Stage 2

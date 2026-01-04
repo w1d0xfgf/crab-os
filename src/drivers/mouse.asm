@@ -166,6 +166,14 @@ mouse_init:
 	mov ah, 0xF4
 	call .ps2_mouse_wr
 
+	cmp byte [mouse_init_error], 0
+	jne .stc
+.clc:
+	clc
+	jmp .done
+.stc:
+	stc
+.done:
 	ret
 
 ; Отослать команду/данные PS/2 мышке
@@ -188,12 +196,7 @@ mouse_init:
 
 	ret
 .error:
-	; Вывести ps2_mouse_error_msg и ждать нажатия клавиши
-	mov esi, ps2_mouse_error_msg
-	call println_str
-	mov byte [key_queue_top], 0
-	call wait_key
-	mov byte [key_queue_top], 0
+	mov byte [mouse_init_error], 1
 
 	ret
 
@@ -235,5 +238,6 @@ mouse_packet times 3 db 0
 mouse_x dw 0
 mouse_y dw 0
 mouse_state db 0
+mouse_init_error db 0
 
 ps2_mouse_error_msg db 'PS/2 mouse initialization error', 0
