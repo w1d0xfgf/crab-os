@@ -4,8 +4,8 @@
 
 bits 32
 
-; Размер Bitmap
-BITMAP_SIZE equ 64
+; Размер Bitmap в страницах
+BITMAP_SIZE equ 1028
 
 ; ------------------------------------------------------------------
 
@@ -81,6 +81,44 @@ mem_map_test:
 
 ; ------------------------------------------------------------------
 
+; Сделать биты определённого региона (базовый индекс и длина) 0
+;
+; Базовый индекс: EBX
+; Длина: ECX
+mem_map_clear_region:
+	push ebx
+	push ecx
+	mov eax, ebx
+	call mem_map_clear
+	pop ecx
+	pop ebx
+	
+	dec ecx
+	jnz mem_map_clear_region
+
+	ret
+
+; ------------------------------------------------------------------
+
+; Сделать биты определённого региона (базовый индекс и длина) 1
+;
+; Базовый индекс: EBX
+; Длина: ECX
+mem_map_set_region:
+	push ebx
+	push ecx
+	mov eax, ebx
+	call mem_map_set
+	pop ecx
+	pop ebx
+	
+	dec ecx
+	jnz mem_map_set_region
+
+	ret
+
+; ------------------------------------------------------------------
+
 ; Найти первый свободный бит в Bitmap
 ;
 ; Индекс бита: EBX (если нет, -1)
@@ -118,4 +156,4 @@ found_bit:
 section .bss
 
 ; Bitmap для хранения состояния (занато/свободно) страниц (4096 Б на каждую) памяти
-bitmap resb 4096*BITMAP_SIZE/8
+bitmap resb BITMAP_SIZE/8
