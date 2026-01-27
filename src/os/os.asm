@@ -33,6 +33,9 @@ extern compare_strs
 extern trim_str
 extern key_queue
 
+
+extern mem_map_test
+
 global os_entry
 
 ; Код

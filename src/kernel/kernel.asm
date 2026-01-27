@@ -7,11 +7,15 @@ bits 32
 
 %include "src/const.asm"
 
+extern stack_bottom
+extern stack_top
+
 extern set_cursor
 extern mouse_init
 extern disable_blink
 extern init_idt_and_pic
 extern os_entry
+
 extern print_reg32
 extern println_reg32
 extern print_reg32_hex
@@ -19,8 +23,12 @@ extern println_reg32_hex
 extern print_str
 extern print_char
 extern println_str
+
 extern flush_buffer
 extern wait_key
+
+extern mem_map_clear_region
+extern mem_map_set_region
 
 extern vga_attr
 extern reg32
@@ -86,6 +94,11 @@ kernel_entry:
 
 	sti
 
+	; Заполнить Bitmap единицами
+	mov ebx, 0
+	mov ecx, 0xFFFFFFFF
+	call mem_map_set_region
+
 	; Посчитать количество доступной ОЗУ
 	mov ecx, 0
 	mov esi, memory_map
@@ -102,12 +115,48 @@ kernel_entry:
 	mov eax, [esi + 12]
 	shl eax, 22
 	add [total_ram + 4], eax
+
+	push ecx
+
+	; Инцициализировать память в PMM
+
+	; Выходит ли база за 32 бита?
+	cmp dword [esi + 4], 0
+	jne .skip
+
+	; Базовый адрес
+	mov ebx, [esi]
+	shr ebx, 12
+
+	; Выходит ли длина за 32 бита?
+	cmp dword [esi + 12], 0
+	jne .too_long
+
+	; Длина
+	mov ecx, [esi + 8]
+	add ecx, 4095
+	shr ecx, 12
+	
+	call mem_map_clear_region
+	jmp .type1_skip
+.too_long:
+	; Поскольку длина слишком большая, заменим её на самое большое возможное число 
+	mov ecx, 0xFFFFFFFF
+
+	call mem_map_clear_region
+.type1_skip:
+	pop ecx
 .skip:
 	add esi, 24
 	inc ecx
 	cmp ecx, MAX_MEM_MAP_ENTRIES
 	jb .next
 .done:
+
+	; Выделить ядру 16 страниц в PMM
+	mov ebx, 0x8200 >> 12
+	mov ecx, 16
+	call mem_map_set_region
 
 	; Лог
 	mov esi, log_3
@@ -293,8 +342,3 @@ memory_map: resb 24*MAX_MEM_MAP_ENTRIES
 
 ; Количество ОЗУ в КБ
 total_ram: resq 1
-
-; 4 КиБ стек
-stack_bottom:
-	resb 4096
-stack_top:
