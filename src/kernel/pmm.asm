@@ -8,8 +8,8 @@ global mem_map_set
 global mem_map_clear
 global mem_map_test
 global mem_map_set_region
-global mem_map_clear_region
-global mem_map_first_free
+global mem_free
+global mem_alloc
 
 ; Размер Bitmap в страницах
 BITMAP_SIZE equ 4096
@@ -91,12 +91,12 @@ mem_map_test:
 
 ; ------------------------------------------------------------------
 
-; Сделать биты определённого региона (индекс и длина) 0
+; Освободить память
 ;
 ; Индекс: EBX
 ; Длина: ECX
 ; Меняет: EAX, EBX, ECX
-mem_map_clear_region:
+mem_free:
 	; Пропустить если длина 0
 	test ecx, ecx
 	jz .end
@@ -137,7 +137,7 @@ mem_map_set_region:
 	push ebx
 	push ecx
 	mov eax, ebx
-	cmp eax, BITMAP_SIZE/8 - 1
+	cmp eax, BITMAP_SIZE - 1
 	jae .error
 	call mem_map_set
 	pop ecx
@@ -155,39 +155,50 @@ mem_map_set_region:
 
 ; ------------------------------------------------------------------
 
-; Найти первый свободный бит в Bitmap (если нет, CF)
+; Выделить память (непрерывный регион)
 ;
-; Индекс бита: EBX
-; Меняет: EAX, EBX, ECX, EDX
-mem_map_first_free:
+; Длина (в страницах): ECX
+; Меняет: EAX, EBX, ECX, EDX, ESI
+mem_alloc:
+	test ecx, ecx
+	jz .fail
+
+	mov esi, ecx
 	mov ebx, 0
-find_byte:
-	mov al, [bitmap + ebx]
-	cmp al, 0xFF
-	je next_byte
-	mov ecx, 0
-find_bit_in_byte:
-	mov edx, 1
-	shl edx, cl
-	test al, dl
-	jz found_bit
 
-	inc ecx
-	cmp ecx, 8
-	jb find_bit_in_byte
-next_byte:
-	inc ebx
-	cmp ebx, BITMAP_SIZE/8
-	jb find_byte
+.search_start:
+	cmp ebx, BITMAP_SIZE
+	jae .fail
 
-	stc
-	ret
-found_bit:
-	shl ebx, 3
-	add ebx, ecx
+	mov ecx, esi
+	mov edx, ebx
+
+.check_loop:
+	mov eax, edx
+	pushad
+	call mem_map_test
+	popad
+	jnz .next_start
+
+	inc edx
+	dec ecx
+	jnz .check_loop
+
+	mov ebx, ebx
+	mov ecx, esi
+	call mem_map_set_region
 
 	clc
 	ret
+
+.next_start:
+	inc ebx
+	jmp .search_start
+
+.fail:
+	stc
+	ret
+
 
 ; ------------------------------------------------------------------
 

@@ -27,8 +27,9 @@ extern println_str
 extern flush_buffer
 extern wait_key
 
-extern mem_map_clear_region
+extern mem_free
 extern mem_map_set_region
+extern mem_alloc
 
 extern vga_attr
 extern reg32
@@ -68,6 +69,7 @@ kernel_entry:
 	; Стек
 	mov ss, ax
 	mov esp, stack_top
+	mov ebp, esp
 
 	; IDT
 	call init_idt_and_pic
@@ -137,13 +139,13 @@ kernel_entry:
 	add ecx, 4095
 	shr ecx, 12
 	
-	call mem_map_clear_region
+	call mem_free
 	jmp .type1_skip
 .too_long:
 	; Поскольку длина слишком большая, заменим её на самое большое возможное число 
 	mov ecx, 0xFFFFFFFF
 
-	call mem_map_clear_region
+	call mem_free
 .type1_skip:
 	pop ecx
 .skip:
@@ -155,6 +157,11 @@ kernel_entry:
 
 	; Выделить ядру 16 страниц в PMM
 	mov ebx, 0x8200 >> 12
+	mov ecx, 16
+	call mem_map_set_region
+
+	; Выделить VGA буферу 16 страниц в PMM
+	mov ebx, 0xA0000 >> 12
 	mov ecx, 16
 	call mem_map_set_region
 
