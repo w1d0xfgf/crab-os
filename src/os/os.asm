@@ -1,5 +1,6 @@
 bits 32
 
+extern ramchk_cmd
 extern version_cmd
 extern mouse_cmd
 extern beep_cmd
@@ -32,9 +33,6 @@ extern keys_pressed
 extern compare_strs
 extern trim_str
 extern key_queue
-
-
-extern mem_map_test
 
 global os_entry
 
@@ -263,6 +261,12 @@ input_done:
 	call version_cmd
 	jmp .end
 .cmp13:
+	; Команда ramchk
+	command ramchk_cmd_str
+	jne .cmp14
+	call ramchk_cmd
+	jmp .end
+.cmp14:
 	; Команда fib
 	command fib_cmd_str
 	jne .fail
@@ -324,6 +328,7 @@ invalid_cmd_msg:
 	db 'Type "help" for a list of commands.', 0
 
 ; Команды
+ramchk_cmd_str db 'ramchk', 0
 version_cmd_str db 'version', 0
 mouse_cmd_str db 'mouse', 0
 beep_cmd_str db 'beep', 0

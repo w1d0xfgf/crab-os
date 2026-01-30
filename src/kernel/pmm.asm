@@ -155,7 +155,9 @@ mem_map_set_region:
 
 ; ------------------------------------------------------------------
 
-; Выделить память (непрерывный регион)
+; Выделить непрерывный регион в памяти
+;
+; Адрес выделеного региона (в страницах): EBX
 ;
 ; Длина (в страницах): ECX
 ; Меняет: EAX, EBX, ECX, EDX, ESI
@@ -167,7 +169,7 @@ mem_alloc:
 	mov ebx, 0
 
 .search_start:
-	cmp ebx, BITMAP_SIZE
+	cmp ebx, BITMAP_SIZE - 1
 	jae .fail
 
 	mov ecx, esi
@@ -184,9 +186,10 @@ mem_alloc:
 	dec ecx
 	jnz .check_loop
 
-	mov ebx, ebx
 	mov ecx, esi
+	push ebx
 	call mem_map_set_region
+	pop ebx
 
 	clc
 	ret
