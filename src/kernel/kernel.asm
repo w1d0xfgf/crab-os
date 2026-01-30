@@ -23,8 +23,9 @@ extern println_reg32_hex
 extern print_str
 extern print_char
 extern println_str
-
+extern clear_screen
 extern flush_buffer
+
 extern wait_key
 
 extern mem_free
@@ -73,6 +74,11 @@ kernel_entry:
 
 	; IDT
 	call init_idt_and_pic
+
+	; Очистить экран
+	mov byte [vga_attr], 0x07
+	call clear_screen
+	call flush_buffer
 
 	; Лог
 	mov esi, log_1
@@ -160,9 +166,9 @@ kernel_entry:
 	mov ecx, 16
 	call mem_map_set_region
 
-	; Выделить VGA буферу 16 страниц в PMM
-	mov ebx, 0xA0000 >> 12
-	mov ecx, 16
+	; Выделить VGA буферу 1 страницу в PMM
+	mov ebx, 0xB8000 >> 12
+	mov ecx, 1
 	call mem_map_set_region
 
 	; Лог
@@ -176,7 +182,7 @@ kernel_entry:
 	call disable_blink
 
 	; Установить форму курсора
-	mov ah, 00000000b
+	mov ah, 00010000b
 	call set_cursor
 
 	; Лог
@@ -187,6 +193,10 @@ kernel_entry:
 	mov byte [key_queue_top], 0
 	call wait_key
 	mov byte [key_queue_top], 0
+
+	; Установить форму курсора
+	mov ah, 00000000b
+	call set_cursor
 
 	; Перейти в ОС
 	jmp os_entry
