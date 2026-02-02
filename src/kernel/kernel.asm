@@ -106,35 +106,6 @@ kernel_entry:
 
 	call fdc_init
 
-	jc .fdc_error
-.fdc_ok:
-	; Лог успеха
-	mov esi, log_2
-	call log_ok
-	jmp .fdc_done
-.fdc_error:
-	; Лог ошибки
-	mov esi, log_2
-	call log_error
-.fdc_done:
-
-	call fdc_read
-	jc .fdc2_error
-.fdc2_ok:
-	; Лог успеха
-	mov esi, log_2
-	call log_ok
-	jmp .fdc2_done
-.fdc2_error:
-	; Лог ошибки
-	mov esi, log_2
-	call log_error
-.fdc2_done:
-
-	mov eax, dword [0x1000 + 510]
-	mov [reg32], eax
-	call println_reg32_hex
-
 	; Заполнить Bitmap единицами
 	mov ebx, 0
 	mov ecx, 0xFFFFFFFF
