@@ -13,9 +13,10 @@ extern println_str
 extern println_reg32_hex
 extern clear_screen
 extern flush_buffer
-extern pit_stub
-extern keyboard_stub
-extern mouse_stub
+extern pit_irq_handler
+extern keyboard_irq_handler
+extern mouse_irq_handler
+extern fdc_irq_handler
 
 extern pos_x
 extern pos_y
@@ -143,8 +144,8 @@ init_pic:
 	out PIC2_DATA, al
 	io_wait
 	
-	; Маска прерываний Master PIC: включить IRQ 0, 1, 2
-	mov al, 11111000b
+	; Маска прерываний Master PIC: включить IRQ 0, 1, 2, 6
+	mov al, 10111000b
 	out 0x21, al
 
 	; Маска прерываний Slave PIC: включить IRQ 12
@@ -188,17 +189,22 @@ init_idt_and_pic:
 	jb .loops
 
 	; Записать ISR PIT для IRQ0 (индекс 0x20)
-	mov eax, pit_stub
+	mov eax, pit_irq_handler
 	mov ebx, 0x20
 	call set_idt_entry
 
 	; Записать ISR клавиатуры для IRQ1 (индекс 0x21)
-	mov eax, keyboard_stub
+	mov eax, keyboard_irq_handler
 	mov ebx, 0x21
 	call set_idt_entry
 
+	; Записать ISR FDC для IRQ6 (индекс 0x26)
+	mov eax, fdc_irq_handler
+	mov ebx, 0x26
+	call set_idt_entry
+
 	; Записать ISR мышки для IRQ12 (индекс 0x2C)
-	mov eax, mouse_stub
+	mov eax, mouse_irq_handler
 	mov ebx, 0x2C
 	call set_idt_entry
 	

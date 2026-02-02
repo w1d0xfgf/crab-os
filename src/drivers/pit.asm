@@ -6,7 +6,7 @@ bits 32
 
 %include "src/const.asm"
 
-global pit_stub
+global pit_irq_handler
 global sleep_ticks
 
 global pit_ticks
@@ -17,7 +17,7 @@ global pit_ticks
 section .text
 
 ; ISR PIT прерывания
-pit_stub:
+pit_irq_handler:
 	; Сохранить контекст
 	pushad
 	push ds

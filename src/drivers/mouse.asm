@@ -11,7 +11,7 @@ extern wait_key
 
 extern key_queue_top
 
-global mouse_stub
+global mouse_irq_handler
 global mouse_init
 global ps2_wait_wr
 
@@ -25,7 +25,7 @@ global mouse_state
 section .text
 
 ; ISR мыши
-mouse_stub:
+mouse_irq_handler:
 	; Сохранить состояние
 	pushad
 	push ds
@@ -207,7 +207,7 @@ ps2_wait_wr:
 	mov ecx, 0xFFFF
 .loop:
 	in al, 0x64
-	test al, 00000010b
+	test al, 1 << 1
 	jz .done
 	dec ecx
 	jz .done
@@ -215,12 +215,14 @@ ps2_wait_wr:
 .done:
 	ret
 
+; ------------------------------------------------------------------
+
 ; Подождать перед чтением из контроллера 8042 (порт 0x60)
 ps2_wait_rd:
 	mov ecx, 0xFFFF
 .loop:
 	in al, 0x64
-	test al, 00000001b
+	test al, 1 << 0
 	jnz .done
 	dec ecx
 	jz .done

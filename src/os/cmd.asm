@@ -4,6 +4,8 @@
 
 bits 32
 
+%include "src/const.asm"
+
 global ramchk_cmd
 global version_cmd
 global mouse_cmd
@@ -178,8 +180,8 @@ beep_cmd:
 	mov ecx, 1500
 	call play_sound
 
-	; Подождать 1000 тиков
-	mov edx, 1000
+	; Подождать 200 мс
+	mov edx, PIT_FREQ/1000*200
 	call sleep_ticks
 
 	; Выключить звук

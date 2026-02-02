@@ -6,7 +6,7 @@ bits 32
 
 %include "src/const.asm"
 
-global keyboard_stub
+global keyboard_irq_handler
 global wait_key
 
 global key_queue
@@ -19,7 +19,7 @@ global keys_pressed
 section .text
 
 ; ISR клавиатуры
-keyboard_stub:
+keyboard_irq_handler:
 	; Сохранить состояние
 	pushad
 	push ds
