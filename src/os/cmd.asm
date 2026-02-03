@@ -180,8 +180,8 @@ beep_cmd:
 	mov ecx, 1500
 	call play_sound
 
-	; Подождать 200 мс
-	mov edx, PIT_FREQ/1000*200
+	; Подождать 100 мс
+	mov edx, PIT_FREQ/1000*100
 	call sleep_ticks
 
 	; Выключить звук

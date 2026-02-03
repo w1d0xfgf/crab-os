@@ -16,7 +16,10 @@ extern disable_blink
 extern init_idt_and_pic
 extern os_entry
 extern fdc_init
-extern fdc_read
+extern fdd_read
+extern fdd_write
+extern fdd_motor_on
+extern fdd_motor_off
 
 extern print_reg32
 extern println_reg32
@@ -104,7 +107,21 @@ kernel_entry:
 
 	sti
 
+	; Инициализировать FDC
 	call fdc_init
+
+	; CF = 1 после инициализации значит ошибка
+	jc .fdc_error
+.fdc_ok:
+	; Лог успеха
+	mov esi, log_3
+	call log_ok
+	jmp .fdc_done
+.fdc_error:
+	; Лог ошибки
+	mov esi, log_3
+	call log_error
+.fdc_done:
 
 	; Заполнить Bitmap единицами
 	mov ebx, 0
@@ -165,6 +182,11 @@ kernel_entry:
 	jb .next
 .done:
 
+	; Выделить DMA 0x2500 в PMM
+	mov ebx, 0x1000 >> 12
+	mov ecx, (0x2500 + 4095) >> 12
+	call mem_map_set_region
+
 	; Выделить ядру 16 страниц в PMM
 	mov ebx, 0x8200 >> 12
 	mov ecx, 16
@@ -176,7 +198,7 @@ kernel_entry:
 	call mem_map_set_region
 
 	; Лог
-	mov esi, log_3
+	mov esi, log_4
 	call log_info
 
 	; Вывести карту памяти
@@ -190,7 +212,7 @@ kernel_entry:
 	call set_cursor
 
 	; Лог
-	mov esi, log_4
+	mov esi, log_5
 	call log_info
 
 	; Подождать нажатие клавиши
@@ -346,8 +368,9 @@ log_ok_str db '[  ', 0xFB, '  ]', 0
 log_info_str db '[ (i) ]', 0
 log_1 db 'Initialized IDT', 0
 log_2 db 'Initialized PS/2 mouse', 0
-log_3 db 'Processed memory map:', 0
-log_4:
+log_3 db 'Initialized FDC', 0
+log_4 db 'Processed memory map:', 0
+log_5:
 	db 'VGA is set up', 13, 10
 	db 'Press any key to continue...', 0
 
