@@ -28,6 +28,7 @@ FDC_CCR equ 0x3F7
 
 ; ------------------------------------------------------------------
 
+; Код
 section .text
 
 ; Хендлер IRQ FDC
@@ -510,7 +511,6 @@ fdd_do_cyl:
 	call fdc_data_rd
 	call fdc_data_rd
 
-	popf
 	popad
 	clc
 	ret
