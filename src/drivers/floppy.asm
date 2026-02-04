@@ -8,8 +8,7 @@ extern sleep_ticks
 
 global fdc_irq_handler
 global fdc_init
-global fdd_read
-global fdd_write
+global fdd_do_cyl
 global fdd_motor_on
 global fdd_motor_off
 
@@ -197,14 +196,9 @@ fdc_data_rd:
 ;
 ; Меняет: AL, EDX
 fdd_motor_on:
-	; Прочитать DOR
+	; Настроить DOR
+	mov al, (1 << 4) | (1 << 3) | (1 << 2) | 0
 	mov dx, FDC_DOR
-	in al, dx
-
-	; Включить бит 4 (Drive 0 motor ON)
-	or al, 1 << 4
-
-	; Записать обратно
 	out dx, al
 
 	; Подождать 500 мс
@@ -221,12 +215,10 @@ fdd_motor_on:
 ;
 ; Меняет: AL, DX
 fdd_motor_off:
-	; Прочитать DOR
+	; Настроить DOR
+	mov al, (0 << 4) | (1 << 3) | (1 << 2) | 0
 	mov dx, FDC_DOR
-	in al, dx
-
-	; Выключить бит 4 (Drive 0 motor ON)
-	and al, ~(1 << 4)
+	out dx, al
 
 	; Записать обратно
 	out dx, al
@@ -377,7 +369,7 @@ fdc_init:
 
 	; Настроить DOR: Select Drive 0, Reset 1 (не в режиме сброса), DMA 1 (DMA вместо PIO), 
 	mov dx, FDC_DOR
-	mov al, (1 << 3) | (1 << 2) | (00b)
+	mov al, (1 << 3) | (1 << 2) | 0
 	out dx, al
 
 	; Подождать IRQ
@@ -433,103 +425,42 @@ fdc_init:
 
 ; ------------------------------------------------------------------
 
-; Прочитать цилиндр диска привода FDD
+; Прочитать/записать цилиндр диска привода FDD
 ;
 ; Номер головки: BL
 ; Цилиндр: BH
-fdd_read:
+; Направление: CF (0 = Читать, 1 = Писать)
+fdd_do_cyl:
 	pushad
 	push bx
+	pushf
 
 	; Переход головки к цилиндру командой Seek
 	call fdc_seek
-	
-	; DMA
-	call fdc_dma_rd
 
 	; 50 мс после Seek
 	mov edx, PIT_FREQ/1000*50
 	call sleep_ticks
+	
+	popf
+	jc .write
+.read:
+	; DMA Read режим
+	call fdc_dma_rd
 
 	; Команда Read
 	mov bl, 0x46
 	call fdc_data_wr
-
-	; (head << 2) | drive
-	pop bx
-	push bx
-	shl bl, 2
-	call fdc_data_wr
-
-	; Цилиндр
-	pop bx
-	push bx
-	mov bl, bh
-	call fdc_data_wr
-
-	; Головка
-	pop bx
-	call fdc_data_wr
-
-	; Сектор
-	mov bl, 1
-	call fdc_data_wr
-
-	; Байтов на сектор
-	mov bl, 2
-	call fdc_data_wr
-
-	; 18 секторов на дорожку
-	mov bl, 18
-	call fdc_data_wr
-
-	; GAP1
-	mov bl, 0x1B
-	call fdc_data_wr
-
-	; Длина (0xFF если не 0 байтов на сектор)
-	mov bl, 0xFF
-	call fdc_data_wr
-
-	; Подождать IRQ
-	call fdc_wait_irq
-
-	; Прочитать то, что вернул вызов
-	call fdc_data_rd
-	call fdc_data_rd
-	call fdc_data_rd
-	call fdc_data_rd
-	call fdc_data_rd
-	call fdc_data_rd
-	call fdc_data_rd
-
-	popad
-	clc
-	ret
-
-; ------------------------------------------------------------------
-
-; Записать цилиндр диска привода FDD
-;
-; Номер головки: BL
-; Цилиндр: BH
-fdd_write:
-	pushad
-	push bx
-
-	; Переход головки к цилиндру командой Seek
-	call fdc_seek
 	
-	; DMA
-	call fdc_dma_rd
-
-	; 50 мс после Seek
-	mov edx, PIT_FREQ/1000*50
-	call sleep_ticks
+	jmp .cmd_sent
+.write:
+	; DMA Write режим
+	call fdc_dma_wr
 
 	; Команда Write
 	mov bl, 0x45
 	call fdc_data_wr
+.cmd_sent:
 
 	; (head << 2) | drive
 	pop bx
@@ -579,6 +510,7 @@ fdd_write:
 	call fdc_data_rd
 	call fdc_data_rd
 
+	popf
 	popad
 	clc
 	ret

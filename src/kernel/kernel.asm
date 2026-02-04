@@ -16,8 +16,7 @@ extern disable_blink
 extern init_idt_and_pic
 extern os_entry
 extern fdc_init
-extern fdd_read
-extern fdd_write
+extern fdd_do_cyl
 extern fdd_motor_on
 extern fdd_motor_off
 
