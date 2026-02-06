@@ -1,5 +1,6 @@
 bits 32
 
+extern flprd_cmd
 extern ramchk_cmd
 extern version_cmd
 extern mouse_cmd
@@ -14,6 +15,7 @@ extern rand_cmd
 extern info_cmd
 extern panic_cmd
 extern restart_cmd
+
 extern init_gui
 extern update_gui
 extern get_rtc_time
@@ -267,6 +269,12 @@ input_done:
 	call ramchk_cmd
 	jmp .end
 .cmp14:
+	; Команда flprd
+	command flprd_cmd_str
+	jne .cmp15
+	call flprd_cmd
+	jmp .end
+.cmp15:
 	; Команда fib
 	command fib_cmd_str
 	jne .fail
@@ -328,6 +336,7 @@ invalid_cmd_msg:
 	db 'Type "help" for a list of commands.', 0
 
 ; Команды
+flprd_cmd_str db 'flprd', 0
 ramchk_cmd_str db 'ramchk', 0
 version_cmd_str db 'version', 0
 mouse_cmd_str db 'mouse', 0

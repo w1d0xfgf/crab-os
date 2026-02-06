@@ -6,6 +6,7 @@ bits 32
 
 %include "src/const.asm"
 
+global flprd_cmd
 global ramchk_cmd
 global version_cmd
 global mouse_cmd
@@ -22,6 +23,7 @@ global panic_cmd
 global restart_cmd
 
 extern init_gui
+extern print_reg8_hex
 extern print_reg32
 extern println_reg32
 extern println_reg32_hex
@@ -43,6 +45,10 @@ extern wait_key
 extern ps2_wait_wr
 extern kernel_entry
 extern stack_bottom
+extern fdd_do_cyl
+extern fdc_recalibrate
+extern fdd_motor_on
+extern fdd_motor_off
 
 extern vga_attr
 extern pos_x
@@ -63,6 +69,11 @@ extern mem_free
 
 ; Код
 section .text
+
+flprd_cmd:
+	%include "src/os/cmd/flprd.asm"
+
+; ------------------------------------------------------------------
 
 ; Проверить ОЗУ и PMM
 ramchk_cmd:
@@ -303,13 +314,26 @@ restart_cmd:
 ; Данные
 section .data
 
+flprd_location dw 0
+flprd_msg1:
+	db 'Insert a 3.5" floppy disk in drive A:', 13, 10
+	db 'Press any key when ready', 0
+flprd_msg2:
+	db 'Preparing the disk for read operations...', 0
+flprd_error:
+	db 'Recalibration error', 13, 10
+	db 'The disk is not inserted or not broken', 0
+flprd_help:
+	db 'Use Q and E to move', 13, 10
+	db 'Sector ', 0
+
 hex_prefix db '0x', 0
 
 ramchk_errorcode db 0
 ramchk_msg db 'Allocated page at ', 0
 ramchk_error db 'Error ', 0
 
-version_str db 'v0.1.6', 0
+version_str db 'v0.1.7', 0
 
 escape_msg db 'Press <Escape> to exit', 0
 
@@ -325,6 +349,7 @@ cmd_list_msg:
 	db 'beep    - Make a beep', 13, 10
 	db 'cls     - Clear the screen and re-initialize GUI', 13, 10
 	db 'fib     - Print the next fibonacci number', 13, 10
+	db 'flprd   - Read floppy disk', 13, 10
 	db 'pong    - Play Pong', 13, 10
 	db 'help    - Show this list', 13, 10
 	db 'info    - Print info about the system', 13, 10

@@ -7,6 +7,7 @@ bits 32
 extern sleep_ticks
 
 global fdc_irq_handler
+global fdc_recalibrate
 global fdc_init
 global fdd_do_cyl
 global fdd_motor_on

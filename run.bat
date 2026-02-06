@@ -31,5 +31,5 @@ llvm-objcopy -O binary kernel.elf bin/kernel.bin
 copy /b bin\stage1.bin + bin\stage2.bin + bin\kernel.bin build.img
 conv.exe build.img 1.44mb_build.img
 
-:: Запустить в QEMU 
-"C:\Program Files\qemu\qemu-system-i386.exe" -fda 1.44mb_build.img -display sdl
+:: Запустить в Bochs
+bochs -f bochsrc.bxrc -q

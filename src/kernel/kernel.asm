@@ -16,9 +16,6 @@ extern disable_blink
 extern init_idt_and_pic
 extern os_entry
 extern fdc_init
-extern fdd_do_cyl
-extern fdd_motor_on
-extern fdd_motor_off
 
 extern print_reg32
 extern println_reg32
