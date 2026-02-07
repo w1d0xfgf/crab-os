@@ -315,15 +315,15 @@ restart_cmd:
 section .data
 
 flprd_location dw 0
-flprd_msg1:
+flprd_msg_disk:
 	db 'Insert a 3.5" floppy disk in drive A:', 13, 10
 	db 'Press any key when ready', 0
-flprd_msg2:
+flprd_msg_prepare:
 	db 'Preparing the disk for read operations...', 0
-flprd_error:
+flprd_msg_error:
 	db 'Recalibration error', 13, 10
-	db 'The disk is not inserted or not broken', 0
-flprd_help:
+	db 'The disk is not inserted or broken', 0
+flprd_msg_help:
 	db 'Use Q and E to move', 13, 10
 	db 'Sector ', 0
 

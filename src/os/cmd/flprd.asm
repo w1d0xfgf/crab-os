@@ -3,7 +3,7 @@
 	call set_cursor
 	
 	; Вывести сообщение
-	mov esi, flprd_msg1
+	mov esi, flprd_msg_disk
 	call print_str
 	call flush_buffer
 	
@@ -13,7 +13,7 @@
 
 	; Очистить экран и вывести сообщение
 	call clear_screen
-	mov esi, flprd_msg2
+	mov esi, flprd_msg_prepare
 	mov byte [pos_x], 0
 	mov byte [pos_y], 0
 	call print_str
@@ -28,7 +28,7 @@
 .error:
 	; Ошибка
 	call clear_screen
-	mov esi, flprd_error
+	mov esi, flprd_msg_error
 	mov byte [pos_x], 0
 	mov byte [pos_y], 0
 	call print_str
@@ -46,36 +46,58 @@
 	call clear_screen
 
 	; Вывести сообщение и location
-	mov esi, flprd_help
+	mov esi, flprd_msg_help
 	call print_str
 	movzx eax, word [flprd_location]
 	mov [reg32], eax
 	call println_reg32_hex
+	call flush_buffer
 
 	; Посчитать head и cylinder из LBA секторов
-	xor dx, dx
 	mov ax, [flprd_location]
-	mov bx, 18
-	div bx
 
+	; Формула для LBA -> CH для 3.5" флоппи диска:
+	; Hn (головок) = 2
+	; Sn (секторов на дорожку) = 18
+	;
+	; H = LBA / (Hn * Sn) = LBA / Hn / Sn
+	; C = LBA / Sn mod Hn
+	;
+	; a = LBA / Sn
+	; H = a / Hn
+	; C = a mod Hn
+
+	; AX = LBA / Sn
+	mov bx, ax
+	mov cx, 18
 	xor dx, dx
-	mov bx, 80
-	div bx
+	div cx
+
+	; Цилиндры = LBA / Hn, Головки = LBA mod Hn
+	xor dx, dx
+	mov cx, 2
+	div cx
 
 	; Прочитать цилиндр
-	mov bl, al
-	mov bh, dl
+	mov bl, dl
+	mov bh, al
 	clc
 	call fdd_do_cyl
  
-	; Вычислить позицию сектора в памяти
+	; Адрес буфера где находятся данные
 	mov esi, 0x1000
 	xor edx, edx
+
+	; Вычислить смещение:
+	; Сектор, начиная с 0 = LBA % SPT, для 3.5" флоппи SPT = 18
+	; Размер сектора в памяти = 512
+	; Смещение = Сектор * Размер сектора
 	movzx eax, word [flprd_location]
 	mov ebx, 18
 	div ebx
 	shl edx, 9
 	add esi, edx
+	shr edx, 9
 
 	; Вывести сектор
 	mov cl, 0
