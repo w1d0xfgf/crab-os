@@ -23,15 +23,15 @@
 	
 	; Калибрация флоппи диска
 	call fdc_recalibrate
-	jnc .no_error
-.error:
+	jnc .rno_error1
+.rerror1:
 	; Ошибка
 	mov esi, flpcp_msg_error
 	call .msg
 	mov byte [key_queue_top], 0
 	call wait_key
 	jmp .exit
-.no_error:
+.rno_error1:
 	
 	; Выделить память
 	mov ecx, (18 * 80 * 2 * 512 + 4095) / 4096
@@ -69,23 +69,11 @@
 		cmp ch, 2
 		jb .rloop2
 	inc cl
-	cmp cl, 80
+	cmp cl, 10
 	jb .rloop1
 
 	; Выключить мотор флоппи диска
 	call fdd_motor_off
-
-	; Калибрация флоппи диска
-	call fdc_recalibrate
-	jnc .no_error
-.error:
-	; Ошибка
-	mov esi, flpcp_msg_error
-	call .msg
-	mov byte [key_queue_top], 0
-	call wait_key
-	jmp .exit_free
-.no_error:
 
 	; Очистить экран и вывести сообщения
 	mov esi, flpcp_msg_disk2
@@ -97,6 +85,18 @@
 
 	; Включить мотор флоппи диска
 	call fdd_motor_on
+
+	; Калибрация флоппи диска
+	call fdc_recalibrate
+	jnc .rno_error2
+.rerror2:
+	; Ошибка
+	mov esi, flpcp_msg_error
+	call .msg
+	mov byte [key_queue_top], 0
+	call wait_key
+	jmp .exit_free
+.rno_error2:
 
 	; Записать данные на флоппи диск
 	mov esi, flpcp_msg_transfer
@@ -126,7 +126,7 @@
 		cmp ch, 2
 		jb .wloop2
 	inc cl
-	cmp cl, 80
+	cmp cl, 10
 	jb .wloop1
 
 	jmp .exit
