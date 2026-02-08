@@ -69,7 +69,7 @@
 		cmp ch, 2
 		jb .rloop2
 	inc cl
-	cmp cl, 10
+	cmp cl, 80
 	jb .rloop1
 
 	; Выключить мотор флоппи диска
@@ -126,7 +126,7 @@
 		cmp ch, 2
 		jb .wloop2
 	inc cl
-	cmp cl, 10
+	cmp cl, 80
 	jb .wloop1
 
 	jmp .exit
