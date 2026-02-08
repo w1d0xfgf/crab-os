@@ -6,6 +6,7 @@ bits 32
 
 %include "src/const.asm"
 
+global flpcp_cmd
 global flprd_cmd
 global ramchk_cmd
 global version_cmd
@@ -69,6 +70,13 @@ extern mem_free
 
 ; Код
 section .text
+
+; ------------------------------------------------------------------
+
+flpcp_cmd:
+	%include "src/os/cmd/flpcp.asm"
+
+; ------------------------------------------------------------------
 
 flprd_cmd:
 	%include "src/os/cmd/flprd.asm"
@@ -314,6 +322,26 @@ restart_cmd:
 ; Данные
 section .data
 
+flpcp_msg_disk1:
+	db 'Insert the first 3.5" floppy disk in drive A:', 13, 10
+	db 'Press any key when ready or Esc to exit', 0
+flpcp_msg_disk2:
+	db 'Insert the second 3.5" floppy disk in drive A:', 13, 10
+	db 'and disable write protection', 13, 10
+	db 'Press any key when ready or Esc to exit', 0
+flpcp_msg_prepare:
+	db 'Preparing the disk for data transfer...', 0
+flpcp_msg_transfer:
+	db 'Transferring data...', 13, 10
+	db '(its safe to turn off your computer)', 0
+flpcp_msg_write:
+	db 'Are you sure?', 13, 10
+	db 'This will overwrite the contents of the disk', 13, 10
+	db 'Press Esc to exit or any other key to continue', 0
+flpcp_msg_error:
+	db 'Recalibration error', 13, 10
+	db 'The disk is not inserted or broken', 0
+
 flprd_location dw 0
 flprd_msg_disk:
 	db 'Insert a 3.5" floppy disk in drive A:', 13, 10
@@ -349,6 +377,7 @@ cmd_list_msg:
 	db 'beep    - Make a beep', 13, 10
 	db 'cls     - Clear the screen and re-initialize GUI', 13, 10
 	db 'fib     - Print the next fibonacci number', 13, 10
+	db 'flpcp   - Copy floppy disk', 13, 10
 	db 'flprd   - Read floppy disk', 13, 10
 	db 'pong    - Play Pong', 13, 10
 	db 'help    - Show this list', 13, 10

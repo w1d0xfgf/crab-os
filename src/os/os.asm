@@ -1,5 +1,6 @@
 bits 32
 
+extern flpcp_cmd
 extern flprd_cmd
 extern ramchk_cmd
 extern version_cmd
@@ -275,6 +276,12 @@ input_done:
 	call flprd_cmd
 	jmp .end
 .cmp15:
+	; Команда flpcp
+	command flpcp_cmd_str
+	jne .cmp16
+	call flpcp_cmd
+	jmp .end
+.cmp16:
 	; Команда fib
 	command fib_cmd_str
 	jne .fail
@@ -336,6 +343,7 @@ invalid_cmd_msg:
 	db 'Type "help" for a list of commands.', 0
 
 ; Команды
+flpcp_cmd_str db 'flpcp', 0
 flprd_cmd_str db 'flprd', 0
 ramchk_cmd_str db 'ramchk', 0
 version_cmd_str db 'version', 0
