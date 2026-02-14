@@ -26,7 +26,7 @@ optramimage2: file=none
 optramimage3: file=none
 optramimage4: file=none
 pci: enabled=1, chipset=i440fx, slot1=none, slot2=none, slot3=none, slot4=none, slot5=none
-vga: extension=vbe, update_freq=10, realtime=1, ddc=builtin, vbe_memsize=16
+vga: extension=vbe, update_freq=60, realtime=1, ddc=builtin, vbe_memsize=16
 cpu: count=1, ips=80000000, model=core_duo_t2400_yonah, reset_on_triple_fault=1, cpuid_limit_winnt=0, ignore_bad_msrs=1, mwait_is_nop=0
 print_timestamps: enabled=0
 debugger_log: -
@@ -39,7 +39,7 @@ clock: sync=both, time0=local, rtc_sync=1
 log: -
 logprefix: %t%e%d
 debug: action=ignore
-info: action=report
+info: action=ignore
 error: action=report
 panic: action=ask
 keyboard: type=mf, serial_delay=150, paste_delay=100000, user_shortcut=none
