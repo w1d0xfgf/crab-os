@@ -8,7 +8,7 @@
 
 __attribute__((interrupt("IRQ")))
 void kbrd_irq_handler(interrupt_frame_t* frame);
-u16 kbrd_get_last_scancode();
+u16 kbrd_wait_scancode();
 bool kbrd_get_key_pressed(u8 key);
 
 #endif

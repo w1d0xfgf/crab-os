@@ -64,7 +64,7 @@ cmos_floppy_t cmos_read_floppy(bool slave) {
 	// Прочитать данные
 	u8 data = cmos_read(CMOS_FLOPPY);
 
-	// Биты 0-3 Slave привод биты 4-7 Master привод
+	// Биты 0-3 -- Slave, биты 4-7 -- Master
 	if (slave) {
 		return data & 0b00001111;
 	} else {

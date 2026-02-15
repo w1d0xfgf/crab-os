@@ -36,56 +36,17 @@ int kmain(memory_map_entry_t* memory_map) {
 	console_t con;
 	con.x = 0;
 	con.y = 0;
-	con.attr = VGA_LIGHT_GREEN;
+	con.attr = VGA_WHITE;
 
-	// Цикл
-	for (;;) {
-		// Строка 0 цвет зелёный
-		con.x = 0;
-		con.y = 0;
-		con.attr = VGA_LIGHT_GREEN;
+	// Инициализировать VGA
+	vga_disable_blink();
+	vga_set_cursor(14, 16);
+	vga_clear(&con);
+	vga_flush_buffer();
 
-		// Очистить экран и напечатать "Hello kernel!"
-		vga_clear(&con);
-		printf(&con, "Hello kernel!");
-
-		// Строка 1 цвет белый
-		con.x = 0;
-		con.y = 1;
-		con.attr = VGA_WHITE;
-
-		// PIT тики
-		printf(&con, "Time since bootup: %d s %d ms",
-			(u32)get_pit_ticks() / PIT_FREQUENCY,
-			(u32)get_pit_ticks() * 1000 / PIT_FREQUENCY % 1000
-		);
-
-		// Строка 2
-		con.x = 0;
-		con.y = 2;
-
-		// Прочитать RTC
-		rtc_time_t time = cmos_read_rtc();
-
-		// HH:MM:SS
-		printf(&con, "%b:%b:%b", time.hour, time.minute, time.second);
-
-		// Строка 3
-		con.x = 0;
-		con.y = 3;
-
-		// DD/MM/YY
-		printf(&con, "%b/%b/%b", time.day, time.month, time.year);
-
-		// Строка 4
-		con.x = 0;
-		con.y = 4;
-
-		kbrd_get_key_pressed(0x01) ? printf(&con, "#") : printf(&con, "-");
-
-		// Отобразить
-		vga_flush_buffer();
-	}
+	// Напечатать "Hello kernel!"
+	printf(&con, "Hello kernel!");
+	vga_flush_buffer();
 
 	return 0;
 }

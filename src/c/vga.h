@@ -30,8 +30,12 @@ typedef struct {
 void vga_putc(console_t* con, char chr);
 void vga_print(console_t* con, const char* str);
 void vga_clear(console_t* con);
-void vga_flush_buffer();
 void vga_plot(console_t* con, u8 x, u8 y);
-void vga_draw_line(console_t* con, i8 x1, i8 y1, i8 x2, i8 y2);
+void vga_scroll(console_t* con);
+void vga_update_cursor(console_t* con);
+void vga_disable_blink();
+void vga_set_cursor(u8 start, u8 end);
+void vga_flush_buffer();
+void vga_try_flush_buffer();
 
 #endif
