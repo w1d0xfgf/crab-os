@@ -5,7 +5,22 @@
 
 #define PMM_BITMAP_SIZE_PAGES 10000
 
-void pfree(u32 address, u32 length);
+typedef struct {
+	u64 base;
+	u64 length;
+	u32 type;
+	u32 reserved;
+} __attribute__((packed)) memory_map_entry_t;
 
+typedef struct {
+	bool is_error;
+	u32 address;
+	u32 length;
+} allocation_result_t;
+
+bool pmm_bitmap_test(u32 idx);
+void pmm_init(memory_map_entry_t* memory_map);
+allocation_result_t palloc(u32 length);
+void pfree(allocation_result_t* allocated);
 
 #endif
