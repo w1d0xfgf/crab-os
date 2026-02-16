@@ -6,6 +6,7 @@ nasm -f bin -o bin/stage2.bin src/boot/stage2.asm
 
 :: Скомпилировать ядро
 nasm -f elf32 -o obj/entry.o src/entry.asm
+clang -target i386-pc -march=i486 -flto -m32 -g0 -mgeneral-regs-only -O3 -funified-lto -ffreestanding -mno-sse -mno-avx -mno-mmx -fno-stack-protector -fomit-frame-pointer -fno-pic -mno-red-zone -nostdlib -c -o obj/kbc.o src/c/kbc.c
 clang -target i386-pc -march=i486 -flto -m32 -g0 -mgeneral-regs-only -O3 -funified-lto -ffreestanding -mno-sse -mno-avx -mno-mmx -fno-stack-protector -fomit-frame-pointer -fno-pic -mno-red-zone -nostdlib -c -o obj/pmm.o src/c/pmm.c
 clang -target i386-pc -march=i486 -flto -m32 -g0 -mgeneral-regs-only -Os -funified-lto -ffreestanding -mno-sse -mno-avx -mno-mmx -fno-stack-protector -fomit-frame-pointer -fno-pic -mno-red-zone -nostdlib -c -o obj/utils.o src/c/utils.c
 clang -target i386-pc -march=i486 -flto -m32 -g0 -mgeneral-regs-only -O2 -funified-lto -ffreestanding -mno-sse -mno-avx -mno-mmx -fno-stack-protector -fomit-frame-pointer -fno-pic -mno-red-zone -nostdlib -c -o obj/keyboard.o src/c/keyboard.c
@@ -16,7 +17,7 @@ clang -target i386-pc -march=i486 -flto -m32 -g0 -mgeneral-regs-only -Os -funifi
 clang -target i386-pc -march=i486 -flto -m32 -g0 -mgeneral-regs-only -Os -funified-lto -ffreestanding -mno-sse -mno-avx -mno-mmx -fno-stack-protector -fomit-frame-pointer -fno-pic -mno-red-zone -nostdlib -c -o obj/idt.o src/c/idt.c
 clang -target i386-pc -march=i486 -flto -m32 -g0 -mgeneral-regs-only -O2 -funified-lto -ffreestanding -mno-sse -mno-avx -mno-mmx -fno-stack-protector -fomit-frame-pointer -fno-pic -mno-red-zone -nostdlib -c -o obj/vga.o src/c/vga.c
 clang -target i386-pc -march=i486 -flto -m32 -g0 -mgeneral-regs-only -Os -funified-lto -ffreestanding -mno-sse -mno-avx -mno-mmx -fno-stack-protector -fomit-frame-pointer -fno-pic -mno-red-zone -nostdlib -c -o obj/main.o src/c/main.c
-ld.lld --lto-O3 --lto=full --no-gc-sections -m elf_i386 -T linker.ld -o kernel.elf obj/entry.o obj/main.o obj/vga.o obj/idt.o obj/pic.o obj/pit.o obj/print.o obj/cmos.o obj/keyboard.o obj/utils.o obj/pmm.o
+ld.lld --lto-O3 --lto=full --no-gc-sections -m elf_i386 -T linker.ld -o kernel.elf obj/entry.o obj/main.o obj/vga.o obj/idt.o obj/pic.o obj/pit.o obj/print.o obj/cmos.o obj/keyboard.o obj/utils.o obj/pmm.o obj/kbc.o
 
 :: В .bin
 llvm-objcopy -O binary kernel.elf bin/kernel.bin

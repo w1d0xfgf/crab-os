@@ -123,7 +123,7 @@ void vga_update_cursor(console_t* con) {
 // Выключить мигание
 void vga_disable_blink() {
 	// Сбросить Flip-Flop
-	(void)inb(0x3DA);
+	(volatile void)inb(0x3DA);
 
 	// Индекс регистра VGA
 	outb(0x3C0, 0x30);

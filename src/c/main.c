@@ -1,6 +1,7 @@
 #include "vga.h"
 #include "idt.h"
 #include "types.h"
+#include "kbc.h"
 #include "keyboard.h"
 #include "pic.h"
 #include "pit.h"
@@ -20,6 +21,9 @@ int kmain(memory_map_entry_t* memory_map) {
 	init_pit();
 	idt_set_entry(0x20, &pit_irq_handler, 0x8E);
 
+	// Инициализировать KBC
+	kbc_init();
+
 	// Записать ISR клавиатуры в IDT
 	idt_set_entry(0x21, &kbrd_irq_handler, 0x8E);
 
@@ -28,7 +32,7 @@ int kmain(memory_map_entry_t* memory_map) {
 	
 	// Инициализировать VGA
 	vga_disable_blink();
-	vga_set_cursor(0, 16);
+	vga_set_cursor(12, 14);
 	vga_flush_buffer();
 
 	// Сделать структуру консоли для вывода на экран
@@ -63,19 +67,13 @@ int kmain(memory_map_entry_t* memory_map) {
 	// Инициализировать PMM
 	pmm_init(memory_map);
 
-	// Вывести карту памяти
-	for (u32 row = 0; row < 16; row++) {
-		for (u32 col = 0; col < 64; col++) {
-			if (pmm_bitmap_test(row * 64 + col)) {
-				printf(&con, "#");
-			} else {
-				printf(&con, "-");
-			}
-		}
-		printf(&con, "\r\n");
+	vga_clear(&con);
+	for (u32 i = 0; ; i++) {
+		(void)kbrd_read_scancode();
+		printf(&con, "Scancode %h\r\n", kbrd_wait_scancode());
+		vga_flush_buffer();
+		vga_update_cursor(&con);
 	}
-	vga_flush_buffer();
-	vga_update_cursor(&con);
 	
 	return 0;
 }

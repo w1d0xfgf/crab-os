@@ -1,7 +1,7 @@
 #include "pic.h"
 #include "idt.h"
-#include "ports.h"
 #include "types.h"
+#include "kbc.h"
 #include "keyboard.h"
 
 typedef struct {
@@ -35,7 +35,7 @@ void kbrd_irq_handler(interrupt_frame_t* frame) {
 	(void)frame;
 
 	// Получить данные от KBC
-	u8 data = inb(KBC_DATA);
+	u8 data = kbc_read_data();
 
 	// Если данные 0xE0 (префикс расширенных клавиш), поставить флаг
 	if (data == 0xE0) {
