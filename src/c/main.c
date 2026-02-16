@@ -45,7 +45,7 @@ int kmain(memory_map_entry_t* memory_map) {
 	vga_flush_buffer();
 
 	// Напечатать "Hello kernel!"
-	printf(&con, "Hello kernel!");
+	printf(&con, "Hello kernel!\r\n");
 	vga_flush_buffer();
 
 	return 0;

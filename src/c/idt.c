@@ -1,5 +1,7 @@
 #include "vga.h"
 #include "idt.h"
+#include "keyboard.h"
+#include "print.h"
 #include "types.h"
 
 // IDT запись
@@ -42,22 +44,80 @@ static void dummy_handler(interrupt_frame_t* frame) {
 	(void)frame;
 }
 
-// #GP ISR
+// ISR #GP исключения
 __attribute__((interrupt, noreturn))
 static void gpf_handler(interrupt_frame_t* frame, u32 error_code) {
-	(void)frame;
-	(void)error_code;
-	u8 str[] = "#GP Exception";
-	for (u8* ptr = (u8*)(0xB8000); ptr < 0xB8000 + 80 * 25 * 2; ptr++) {
-		*ptr = ' ';
-		ptr++;
-		*ptr = 0x07;
-	}
-	for (int i = 0; i < sizeof(str) / sizeof(u8); i++) {
-		*(u8*)(0xB8000 + i * 2) = str[i];
-		*(u8*)(0xB8001 + i * 2) = 0x07;
-	}
-	for (;;) {}
+	// Создать объект консоли
+	console_t con;
+	con.x = 0;
+	con.y = 0;
+	con.attr = VGA_BLUE << 4 | VGA_WHITE;
+
+	// Очистить экран
+	vga_clear(&con);
+
+	// Вывести сообщение
+	printf(&con, 
+		"PANIC! #GP Exception\r\n"
+		"      _~^~^~_\r\n"
+		"  \\) /  o o  \\ (/\r\n"
+		"     '_  \x7F  _'\r\n"
+		"    / '-----' \\\r\n"
+		"Error code %h: ",
+	error_code);
+
+	// Обработать код ошибки
+	if (error_code & 0b00000001) printf(&con, "External ");
+	printf(&con, "Table %d ", error_code >> 1 & 0b00000011);
+	printf(&con, "Index %d\r\n", error_code >> 3);
+	
+	// Вывести данные из фрейма прерывания
+	printf(&con,
+		"EIP    %h\r\n"
+		"EFLAGS %h\r\n"
+		"CS     %h",
+	frame->eip, frame->eflags, frame->cs);
+
+	// Отобразить
+	vga_flush_buffer();
+
+	// Бесконечный цикл
+	__asm__ volatile ("cli");
+	__asm__ volatile ("hlt");
+}
+
+// ISR Breakpoint исключения
+__attribute__((interrupt))
+static void breakpoint_handler(interrupt_frame_t* frame) {
+	// Создать консоль
+	console_t con;
+	con.x = 0;
+	con.y = 0;
+	con.attr = VGA_GREEN << 4 | VGA_WHITE;
+
+	// Очистить экран
+	vga_clear(&con);
+
+	
+	printf(&con, 
+		"Breakpoint exception\r\n"
+		"      _~^~^~_\r\n"
+		"  \\) /  o o  \\ (/\r\n"
+		"     '_  -  _'\r\n"
+		"    / '-----' \\\r\n"
+		"Press any key to continue\r\n"
+	);
+
+	printf(&con,
+		"EIP    %h\r\n"
+		"EFLAGS %h\r\n"
+		"CS     %h",
+	frame->eip, frame->eflags, frame->cs);
+	vga_flush_buffer();
+
+	// Подождать нажатия клавиши
+	__asm__ volatile ("sti");
+	(void)kbrd_wait_scancode();
 }
 
 // Инициализировать IDT
@@ -73,6 +133,9 @@ void idt_init() {
 
 	// #GP ISR
 	idt_set_entry(0x0D, &gpf_handler, 0x8E);
+
+	// Breakpoint ISR
+	idt_set_entry(0x03, &breakpoint_handler, 0x8E);
 
 	// Загрузить IDT
 	__asm__ volatile ("lidt %0" : : "m"(idtr));
