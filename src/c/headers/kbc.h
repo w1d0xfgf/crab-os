@@ -10,6 +10,7 @@
 
 u8 kbc_send_cmd(u8 cmd);
 u8 kbc_read_data();
+u8 kbc_write_data(u8 data);
 u8 kbc_init();
 void kbc_cpu_reset();
 

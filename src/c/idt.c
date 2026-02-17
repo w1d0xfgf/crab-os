@@ -117,6 +117,7 @@ static void breakpoint_handler(interrupt_frame_t* frame) {
 
 	// Подождать нажатия клавиши
 	__asm__ volatile ("sti");
+	(void)kbrd_read_scancode();
 	(void)kbrd_wait_scancode();
 }
 

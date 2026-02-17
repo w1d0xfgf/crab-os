@@ -65,7 +65,9 @@ u8 kbc_init() {
 	kbc_send_cmd(0xA7);
 
 	// Очистить буфер
-	(volatile void)inb(KBC_DATA);
+	(void)inb(KBC_DATA);
+	(void)inb(KBC_DATA);
+	(void)inb(KBC_DATA);
 
 	// Установить конфигурацию
 	{

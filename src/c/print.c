@@ -26,13 +26,13 @@ void print_decimal(console_t* con, u32 val) {
 			str[k] = temp;
 		}
 
-		// NUL-терминация
+		// NULL-терминация
 		str[i] = 0;
 	} else {
 		// Ноль
 		str[0] = '0';
 
-		// NUL-терминация
+		// NULL-терминация
 		str[1] = 0;
 	}
 

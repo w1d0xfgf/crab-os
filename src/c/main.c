@@ -11,25 +11,6 @@
 #include "utils.h"
 
 int kmain(memory_map_entry_t* memory_map) {
-	// Инициализировать PIC с размаскированным IRQ0 и IRQ1
-	pic_init(0b11111100, 0b11111111);
-
-	// Инициализировать IDT с пустыми записями
-	idt_init();
-	
-	// Записать ISR PIT в IDT и инициализировать PIT
-	init_pit();
-	idt_set_entry(0x20, &pit_irq_handler, 0x8E);
-
-	// Инициализировать KBC
-	kbc_init();
-
-	// Записать ISR клавиатуры в IDT
-	idt_set_entry(0x21, &kbrd_irq_handler, 0x8E);
-
-	// Включить прерывания
-	__asm__ volatile ("sti");
-	
 	// Инициализировать VGA
 	vga_disable_blink();
 	vga_set_cursor(12, 14);
@@ -40,12 +21,56 @@ int kmain(memory_map_entry_t* memory_map) {
 	con.x = 0;
 	con.y = 0;
 	con.attr = VGA_WHITE;
+	vga_clear(&con);
+	vga_flush_buffer();
+	vga_update_cursor(&con);
+
+	// Инициализировать PIC с размаскированным IRQ0 и IRQ1
+	pic_init(0b11111100, 0b11111111);
+
+	// Инициализировать IDT
+	idt_init();
+	
+	// Записать ISR PIT в IDT и инициализировать PIT
+	init_pit();
+	idt_set_entry(0x20, &pit_irq_handler, 0x8E);
+
+	// Инициализировать KBC
+	{
+		u8 init_result = kbc_init();
+		if (init_result != 0) {
+			printf(&con, "I8084 PS/2 controller initialization failed");
+			vga_flush_buffer();
+			vga_update_cursor(&con);
+			return 0;
+		}
+	}
+
+	// Записать ISR клавиатуры в IDT и инициализировать клавиатуру 
+	{	
+		u8 init_result = kbrd_init();
+		if (init_result == 1) {
+			printf(&con, "PS/2 Keyboard initialization failed: Self-test failed");
+			vga_flush_buffer();
+			vga_update_cursor(&con);
+			return 0;
+		} else if (init_result == 2) {
+			printf(&con, "PS/2 Keyboard initialization failed: Timeout");
+			vga_flush_buffer();
+			vga_update_cursor(&con);
+			return 0;
+		}
+	}
+	idt_set_entry(0x21, &kbrd_irq_handler, 0x8E);
+
+	// Включить прерывания
+	__asm__ volatile ("sti");
 
 	// Проверить существует ли карта памяти
 	{
 		bool memory_map_valid = false;
 
-		// Если хотя бы одной записи корректный, карта памяти существует и корректна
+		// Если хотя бы одна запись правильная, карта памяти существует
 		for (u32 i = 0; i < 128; i++) {
 			// Получить запись из карты
 			memory_map_entry_t entry = memory_map[i];
@@ -55,9 +80,10 @@ int kmain(memory_map_entry_t* memory_map) {
 				break;
 			}
 		}
+
+		// Вывести сообщение если карта не существует
 		if (!memory_map_valid) {
-			// Вывести сообщение
-			printf(&con, "Memory map invalid (your BIOS does not support E820 maps)\r\n");
+			printf(&con, "Memory map invalid (your BIOS does not support E820 maps)");
 			vga_flush_buffer();
 			vga_update_cursor(&con);
 			return 0;
@@ -67,7 +93,23 @@ int kmain(memory_map_entry_t* memory_map) {
 	// Инициализировать PMM
 	pmm_init(memory_map);
 
-	vga_clear(&con);
+	{
+		u64 ram = 0;
+		for (u32 i = 0; i < 128; i++) {
+			// Получить запись из карты
+			memory_map_entry_t entry = memory_map[i];
+
+			// Если запись соответствует свободному участку памяти освободить этот участок в битмапе
+			if (entry.type == 1) {
+				ram += entry.length;
+			}
+		}
+
+		printf(&con, "%d\r\n", (u32)(ram / 1024));
+		vga_flush_buffer();
+		vga_update_cursor(&con);
+	}
+
 	for (u32 i = 0; ; i++) {
 		(void)kbrd_read_scancode();
 		printf(&con, "Scancode %h\r\n", kbrd_wait_scancode());

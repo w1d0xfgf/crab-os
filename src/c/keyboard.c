@@ -2,6 +2,7 @@
 #include "idt.h"
 #include "types.h"
 #include "kbc.h"
+#include "ports.h"
 #include "keyboard.h"
 
 typedef struct {
@@ -35,7 +36,7 @@ void kbrd_irq_handler(interrupt_frame_t* frame) {
 	(void)frame;
 
 	// Получить данные от KBC
-	u8 data = kbc_read_data();
+	u8 data = inb(KBC_DATA);
 
 	// Если данные 0xE0 (префикс расширенных клавиш), поставить флаг
 	if (data == 0xE0) {
@@ -73,6 +74,17 @@ void kbrd_irq_handler(interrupt_frame_t* frame) {
 
 	// Отправить EOI PIC
 	pic_send_eoi(1);
+}
+
+// Инициализировать клавиатуру
+u8 kbrd_init() {
+	kbc_write_data(0xFF);
+	u8 byte1 = kbc_read_data();
+	u8 byte2 = kbc_read_data();
+
+	if (byte1 == 1 || byte2 == 1) return 2;
+	if (byte1 == 0xFC) return 1;
+	return 0;
 }
 
 // Получить сканкод
