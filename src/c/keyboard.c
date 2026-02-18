@@ -14,8 +14,8 @@ typedef struct {
 // FIFO буфер Make сканкодов
 static volatile keyboard_buffer_t buffer = {
 	.buf = {0},
-    .read = 0,
-    .write = 0
+	.read = 0,
+	.write = 0
 };
 
 // Был ли последний сканкод 0xE0?
@@ -78,11 +78,11 @@ void kbrd_irq_handler(interrupt_frame_t* frame) {
 
 // Инициализировать клавиатуру
 u8 kbrd_init() {
-	kbc_write_data(0xFF);
+	kbc_send_byte_port1(0xFF);
 	u8 byte1 = kbc_read_data();
 	u8 byte2 = kbc_read_data();
 
-	if (byte1 == 1 || byte2 == 1) return 2;
+	if (byte1 == -1 || byte2 == -1) return 2;
 	if (byte1 == 0xFC) return 1;
 	return 0;
 }

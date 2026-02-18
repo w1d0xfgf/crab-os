@@ -9,7 +9,7 @@ static u8 kbc_read_status() {
 }
 
 // Отправить команду KBC
-u8 kbc_send_cmd(u8 cmd) {
+static u8 kbc_send_cmd(u8 cmd) {
 	// Подождать пока входной буфер контроллера будет пустым
 	for (u32 i = 0; i < 1000000; i++) {
 		if (!(kbc_read_status() & 0b00000010)) {
@@ -34,7 +34,7 @@ u8 kbc_read_data() {
 }
 
 // Записать данные в KBC
-u8 kbc_write_data(u8 data) {
+static u8 kbc_write_data(u8 data) {
 	// Подождать пока входной буфер контроллера будет пустым
 	for (u32 i = 0; i < 1000000; i++) {
 		if (!(kbc_read_status() & 0b00000010)) {
@@ -79,13 +79,13 @@ u8 kbc_init() {
 
 	// Self-Test контроллера
 	kbc_send_cmd(0xAA);
-	if (kbc_read_data() != 0x55) return 1;
+	if (kbc_read_data() != 0x55) return 2;
 
 	// Заного установить конфигурацию
 	{
 		u8 config = kbc_read_config();
-		config |= 0b01000001;
-		config &= 0b11001101;
+		config |= 0b01000011;
+		config &= 0b11001111;
 		kbc_write_config(config);
 	}
 
@@ -105,7 +105,7 @@ u8 kbc_init() {
 
 	// Тест порта 1
 	kbc_send_cmd(0xAB);
-	if (kbc_read_data() != 0) return 2;
+	if (kbc_read_data() != 0) return 3;
 
 	// Тест порта 2
 	if (dual) {
@@ -117,7 +117,22 @@ u8 kbc_init() {
 	kbc_send_cmd(0xAE);
 	kbc_send_cmd(0xA8);
 
-	return 0;
+	if (dual) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+// Отправить команду устройству порта 1
+void kbc_send_byte_port1(u8 byte) {
+	kbc_write_data(byte);
+}
+
+// Отправить команду устройству порта 2
+void kbc_send_byte_port2(u8 byte) {
+	kbc_send_cmd(0xD4);
+	kbc_write_data(byte);
 }
 
 // Сброс с помощью KBC

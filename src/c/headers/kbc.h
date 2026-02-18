@@ -8,10 +8,12 @@
 #define KBC_CONFIG_READ_CMD 0x20
 #define KBC_CONFIG_WRITE_CMD 0x60
 
-u8 kbc_send_cmd(u8 cmd);
+#define KBC_ACK 0xFA
+
 u8 kbc_read_data();
-u8 kbc_write_data(u8 data);
 u8 kbc_init();
+void kbc_send_byte_port1(u8 byte);
+void kbc_send_byte_port2(u8 byte);
 void kbc_cpu_reset();
 
 #endif
