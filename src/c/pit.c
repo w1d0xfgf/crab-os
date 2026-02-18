@@ -1,7 +1,10 @@
-#include "pit.h"
 #include "pic.h"
 #include "idt.h"
 #include "ports.h"
+#include "pit.h"
+
+#define CH_BASE 0x40
+#define MODE_REG 0x43
 
 // Тики PIT
 static volatile u32 pit_ticks = 0;
@@ -18,25 +21,26 @@ void pit_irq_handler(interrupt_frame_t* frame) {
 	pic_send_eoi(0);
 }
 
-// Инициализировать PIT
-void init_pit() {
-	// Настроить PIT
-	outb(0x43, 0b00110100);
+// Запрограммировать PIT
+void pit_program(u8 mode, u32 frequency) {
+	// Режим
+	outb(MODE_REG, mode);
 
 	// Посчитать делитель и вывести его через порты
-	u16 div = 1193182 / PIT_FREQUENCY;
-	outb(0x40, (u8)div);
-	outb(0x40, (u8)(div >> 8));
+	u16 div = 1193182 / frequency;
+	u8 channel = mode >> 6 & 0b00000011;
+	outb(CH_BASE + channel, (u8)div);
+	outb(CH_BASE + channel, (u8)(div >> 8));
 }
 
 // Получить тики PIT
-u64 get_pit_ticks() {
+u32 get_pit_ticks() {
 	return pit_ticks;
 }
 
 // Подождать определённое количество тиков
-void pit_sleep_ticks(u8 ticks) {
-	u64 target_ticks = pit_ticks + ticks;
+void pit_sleep_ticks(u32 ticks) {
+	u32 target_ticks = pit_ticks + ticks;
 	while (pit_ticks < target_ticks) {
 		// Подождать прерывания
 		__asm__ volatile ("hlt");

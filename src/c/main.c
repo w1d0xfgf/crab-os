@@ -2,6 +2,7 @@
 #include "idt.h"
 #include "types.h"
 #include "kbc.h"
+#include "speaker.h"
 #include "keyboard.h"
 #include "pic.h"
 #include "pit.h"
@@ -31,8 +32,8 @@ int kmain(memory_map_entry_t* memory_map) {
 	// Инициализировать IDT
 	idt_init();
 	
-	// Записать ISR PIT в IDT и инициализировать PIT
-	init_pit();
+	// Записать ISR PIT в IDT и запрограммировать канал 0 PIT на 10000 Гц
+	pit_program(0b00110100, 10000);
 	idt_set_entry(0x20, &pit_irq_handler, 0x8E);
 
 	// Инициализировать KBC
@@ -47,18 +48,19 @@ int kmain(memory_map_entry_t* memory_map) {
 	}
 
 	// Записать ISR клавиатуры в IDT и инициализировать клавиатуру 
-	{	
+	{
+		// Проверить была ли инициализация успешна
 		u8 init_result = kbrd_init();
-		if (init_result == 1) {
-			printf(&con, "PS/2 Keyboard initialization failed: Self-test failed");
+		if (init_result != 0) {
+			if (init_result == 1) {
+				printf(&con, "PS/2 Keyboard initialization failed: Self-test failed");
+				return 0;
+			} else if (init_result == 2) {
+				printf(&con, "PS/2 Keyboard initialization failed: Timeout");
+				return 0;
+			}
 			vga_flush_buffer();
 			vga_update_cursor(&con);
-			return 0;
-		} else if (init_result == 2) {
-			printf(&con, "PS/2 Keyboard initialization failed: Timeout");
-			vga_flush_buffer();
-			vga_update_cursor(&con);
-			return 0;
 		}
 	}
 	idt_set_entry(0x21, &kbrd_irq_handler, 0x8E);
@@ -105,14 +107,19 @@ int kmain(memory_map_entry_t* memory_map) {
 			}
 		}
 
-		printf(&con, "%d\r\n", (u32)(ram / 1024));
+		printf(&con, "%d KB memory free\r\n", (u32)(ram / 1024));
 		vga_flush_buffer();
 		vga_update_cursor(&con);
 	}
 
-	for (u32 i = 0; ; i++) {
-		(void)kbrd_read_scancode();
-		printf(&con, "Scancode %h\r\n", kbrd_wait_scancode());
+	for (;;) {
+		con.x = 0;
+		con.y = 1;
+		printf(&con, "%d PIT ticks", get_pit_ticks());
+		con.x = 0;
+		con.y = 2;
+		rtc_time_t time = cmos_read_rtc();
+		printf(&con, "Current time: %b:%b:%b", time.hour, time.minute, time.second);
 		vga_flush_buffer();
 		vga_update_cursor(&con);
 	}
