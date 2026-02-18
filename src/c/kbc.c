@@ -89,6 +89,30 @@ u8 kbc_init() {
 		kbc_write_config(config);
 	}
 
+	// Проверить 2 порта или нет
+	bool dual = false;
+	{
+		// Включить порт 2
+		kbc_send_cmd(0xA8);
+
+		// Если в конфигурации он включён значит он есть
+		u8 config = kbc_read_config();
+		if (!(config & 0b00100000)) dual = true;
+
+		// Выключить его
+		kbc_send_cmd(0xA7);
+	}
+
+	// Тест порта 1
+	kbc_send_cmd(0xAB);
+	if (kbc_read_data() != 0) return 2;
+
+	// Тест порта 2
+	if (dual) {
+		kbc_send_cmd(0xA9);
+		if (kbc_read_data() != 0) return 3;
+	}
+
 	// Включить порты
 	kbc_send_cmd(0xAE);
 	kbc_send_cmd(0xA8);
