@@ -11,8 +11,13 @@
 #include "pmm.h"
 #include "mouse.h"
 #include "utils.h"
+#include "serial.h"
 
 int kmain(memory_map_entry_t* memory_map) {
+	// Инициализировать COM порт
+	serial_init();
+	serial_print("Serial port test");
+
 	// Инициализировать VGA
 	console_t con;
 	con.x = 0;

@@ -57,7 +57,7 @@ void pmm_init(memory_map_entry_t* memory_map) {
 	pmm_bitmap_do_region(0x8200 / 4096, 0x10000 / 4096, true);
 
 	// Пометить VGA буфер как занято
-	pmm_bitmap_do_region(0xB8000 / 4096, 1, true);
+	pmm_bitmap_do_region(0xA0000 / 4096, 32, true);
 }
 
 // Выделить память

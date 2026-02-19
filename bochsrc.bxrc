@@ -7,7 +7,7 @@ romimage: file="C:\Program Files\Bochs-3.0\BIOS-bochs-latest", address=0x0000000
 vgaromimage: file="C:\Program Files\Bochs-3.0\VGABIOS-lgpl-latest.bin"
 boot: floppy
 floppy_bootsig_check: disabled=0
-floppya: type=1_44, 1_44="C:\Users\User\Desktop\crab-os\1.44mb_build.img", status=inserted, write_protected=1
+floppya: type=1_44, 1_44="1.44mb_build.img", status=inserted, write_protected=1
 # no floppyb
 ata0: enabled=true, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
 ata0-master: type=none
@@ -48,7 +48,7 @@ sound: waveoutdrv=win, waveout=none, waveindrv=win, wavein=none, midioutdrv=win,
 speaker: enabled=true, mode=sound, volume=15
 parport1: enabled=true, file=none
 parport2: enabled=false
-com1: enabled=true, mode=null
+com1: enabled=true, mode=file, dev="serial.txt"
 com2: enabled=false
 com3: enabled=false
 com4: enabled=false

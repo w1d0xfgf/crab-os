@@ -45,6 +45,12 @@ u8 send_byte(u8 byte) {
 __attribute__((interrupt("IRQ")))
 void mouse_irq_handler(interrupt_frame_t* frame) {
 	(void)frame;
+	
+	// Убедится то что есть данные
+	if (!(inb(0x64) & 0b00000001)) {
+		pic_send_eoi(12);
+		return;
+	};
 
 	// Получить данные
 	u8 data = inb(KBC_DATA);
@@ -61,7 +67,6 @@ void mouse_irq_handler(interrupt_frame_t* frame) {
 			packet.byte3 = data;
 			break;
 		default:
-			packet.idx = 0;
 			break;
 	}
 
@@ -69,7 +74,7 @@ void mouse_irq_handler(interrupt_frame_t* frame) {
 	packet.idx++;
 
 	// Обработать весь пакет
-	if (packet.idx > 2) {
+	if (packet.idx > 2) {		
 		// Обновить состояние мышки, если не было Overflow DX или DY
 		if (!(packet.byte1 & 0b10000000) && !(packet.byte1 & 0b01000000)) {
 			// DX и DY
@@ -87,6 +92,7 @@ void mouse_irq_handler(interrupt_frame_t* frame) {
 		// Сбросить индекс
 		packet.idx = 0;
 	}
+
 
 	// Отправить EOI PIC
 	pic_send_eoi(12);
