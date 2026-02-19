@@ -14,6 +14,8 @@ u8 kbc_read_data();
 u8 kbc_init();
 void kbc_send_byte_port1(u8 byte);
 void kbc_send_byte_port2(u8 byte);
+void kbc_disable_port1();
+void kbc_disable_port2();
 void kbc_cpu_reset();
 
 #endif

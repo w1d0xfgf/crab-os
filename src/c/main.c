@@ -13,11 +13,34 @@
 #include "utils.h"
 #include "serial.h"
 
-int kmain(memory_map_entry_t* memory_map) {
-	// Инициализировать COM порт
-	serial_init();
-	serial_print("Serial port test");
+// Напечатать предупреждение
+void warn(console_t* con2, char* msg) {
+	console_t con;
+	con.x = con2->x;
+	con.y = con2->y;
+	con.attr = VGA_YELLOW;
+	printf(&con, "WARNING: %s\r\n", msg);
+	con2->x = con.x;
+	con2->y = con.y;
+	vga_flush_buffer();
+	vga_update_cursor(con2);
+}
 
+// Напечатать ошибку и зависнуть
+void error(console_t* con2, char* msg) {
+	console_t con;
+	con.x = con2->x;
+	con.y = con2->y;
+	con.attr = VGA_RED;
+	printf(&con, "ERROR: %s\r\n", msg);
+	con2->x = con.x;
+	con2->y = con.y;
+	vga_flush_buffer();
+	vga_update_cursor(con2);
+	for (;;);
+}
+
+int kmain(memory_map_entry_t* memory_map) {
 	// Инициализировать VGA
 	console_t con;
 	con.x = 0;
@@ -39,65 +62,66 @@ int kmain(memory_map_entry_t* memory_map) {
 	pit_program(0b00110100, 10000);
 	idt_set_entry(0x20, &pit_irq_handler, 0x8E);
 
+	// Инициализировать COM порт
+	if (serial_init(serial_get_base(0)) == 0) {
+		serial_print(serial_get_base(0), "COM1 port test");
+	} else {
+		warn(&con, "COM1 port initialization failed");
+	}
+
 	// Инициализировать KBC
 	u8 kbc_dual;
 	{
 		// Проверить была ли инициализация успешна
 		u8 init_result = kbc_init();
-		if (init_result > 1) {
-			printf(&con, "I8042 PS/2 controller initialization failed: ");
-			if (init_result == 2) {
-				printf(&con, "Self-test failed");
-			} else if (init_result == 3) {
-				printf(&con, "Interface tests failed");
-			}
-			
-			vga_flush_buffer();
-			vga_update_cursor(&con);
-			return 0;
-		} else {
-			kbc_dual = init_result;
+		switch (init_result) {	
+			case 2:
+				error(&con, "I8042 PS/2 Controller initialization failed: Self-test failed");
+				break;
+			case 3:
+				warn(&con, "I8042 PS/2 Controller initialization failed: Interface tests failed");
+				break;
+			default:
+				kbc_dual = init_result;
+				break;
 		}
 	}
 
 	// Записать ISR клавиатуры в IDT и инициализировать клавиатуру 
 	{
 		// Проверить была ли инициализация успешна
-		u8 init_result = kbrd_init();
-		if (init_result != 0) {
-			printf(&con, "PS/2 Keyboard initialization failed: ");
-			if (init_result == 1) {
-				printf(&con, "Self-test failed");
-			} else if (init_result == 2) {
-				printf(&con, "Timeout");
-			}
-			
-			vga_flush_buffer();
-			vga_update_cursor(&con);
-			return 0;
+		switch (kbrd_init()) {	
+			case 1:
+				kbc_disable_port1();
+				warn(&con, "PS/2 Keyboard initialization failed: Self-test failed");
+				break;
+			case 2:
+				kbc_disable_port1();
+				warn(&con, "PS/2 Keyboard initialization failed: Timeout");
+				break;
+			default:
+				break;
 		}
 	}
 	idt_set_entry(0x21, &kbrd_irq_handler, 0x8E);
 
 	// Если у KBC есть порт мышки
 	if (kbc_dual) {
-		// Записать ISR мышки в IDT и инициализировать мышку
-		{
-			// Проверить была ли инициализация успешна
-			u8 init_result = mouse_init();
-			if (init_result != 0) {
-				printf(&con, "PS/2 Mouse initialization failed: ");
-				if (init_result == 1) {
-					printf(&con, "Self-test failed");
-				} else if (init_result == 2) {
-					printf(&con, "Timeout");
-				}
-				
-				vga_flush_buffer();
-				vga_update_cursor(&con);
-				return 0;
-			}
+		// Инициализировать мышку
+		switch (mouse_init()) {	
+			case 1:
+				kbc_disable_port2();
+				warn(&con, "PS/2 Mouse initialization failed: Self-test failed");
+				break;
+			case 2:
+				kbc_disable_port2();
+				warn(&con, "PS/2 Mouse initialization failed: Timeout");
+				break;
+			default:
+				break;
 		}
+		
+		// Записать ISR мышки в IDT
 		idt_set_entry(0x2C, &mouse_irq_handler, 0x8E);
 	}
 
@@ -119,13 +143,8 @@ int kmain(memory_map_entry_t* memory_map) {
 			}
 		}
 
-		// Вывести сообщение если карта не существует
-		if (!memory_map_valid) {
-			printf(&con, "Memory map invalid (your BIOS does not support E820 maps)");
-			vga_flush_buffer();
-			vga_update_cursor(&con);
-			return 0;
-		}
+		// Выдать ошибку если карта не существует
+		if (!memory_map_valid) error(&con, "Memory map invalid (your BIOS does not support E820 maps)");
 	}
 
 	// Инициализировать PMM
@@ -156,6 +175,8 @@ int kmain(memory_map_entry_t* memory_map) {
 	}
 	vga_flush_buffer();
 	vga_update_cursor(&con);
+
+	// Подождать нажатие клавиши
 	(void)kbrd_read_scancode();
 	(void)kbrd_wait_scancode();
 

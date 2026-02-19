@@ -135,6 +135,16 @@ void kbc_send_byte_port2(u8 byte) {
 	kbc_write_data(byte);
 }
 
+// Отключить порт 1
+void kbc_disable_port1() {
+	kbc_send_cmd(0xAD);
+}
+
+// Отключить порт 2
+void kbc_disable_port2() {
+	kbc_send_cmd(0xA7);
+}
+
 // Сброс с помощью KBC
 void kbc_cpu_reset() {
 	kbc_send_cmd(0xFE);
