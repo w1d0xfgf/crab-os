@@ -40,31 +40,16 @@ u8 serial_init(u16 base) {
 	// Выключить прерывания
 	outb(base + INT_OFFSET, 0);
 
-	// Установить Baud Rate 2400
-	{
-		// Включить DLAB
-		u8 lcr = inb(base + LCR_OFFSET);
-		lcr |= 0b10000000;
-		outb(base + LCR_OFFSET, lcr);
+	// Включить DLAB
+	outb(base + LCR_OFFSET, 0b10000000);
 
-		// Делитель
-		u16 divisor = 115200 / 2400;
-		outb(base + DIV_HI_OFFSET, (u8)(divisor >> 8));
-		outb(base + DIV_LO_OFFSET, (u8)divisor);
+	// Baud Rate 2400
+	u16 divisor = 115200 / 2400;
+	outb(base + DIV_HI_OFFSET, (u8)(divisor >> 8));
+	outb(base + DIV_LO_OFFSET, (u8)(divisor & 0xFF));
 
-		// Выключить DLAB
-		lcr = inb(base + LCR_OFFSET);
-		lcr &= 0b01111111;
-		outb(base + LCR_OFFSET, lcr);
-	}
-	
-	// 8 бит данных, 1 бит Stop, без битов Parity
-	{
-		u8 lcr = inb(base + LCR_OFFSET);
-		lcr |= 0b00000011;
-		lcr &= 0b11000011;
-		outb(base + LCR_OFFSET, lcr);
-	}
+	// Выключить DLAB, 8 бит данных, 1 бит Stop, без битов Parity
+	outb(base + LCR_OFFSET, 0b00000011);
 
 	// FIFO включено, очистить буферы
 	outb(base + FIFO_OFFSET, 0b11000111);
@@ -76,11 +61,13 @@ u8 serial_init(u16 base) {
 	outb(base + MCR_OFFSET, 0b00011110);
 
 	// Протестировать
-	outb(base + BUF_OFFSET, 0xA5);
-	if (inb(base + BUF_OFFSET) != 0xA5) return 1;
+	serial_transmit(base, 0xAA);
+	if (serial_recieve(base) != 0xAA) return 1;
+	serial_transmit(base, 0x55);
+	if (serial_recieve(base) != 0x55) return 1;
 
 	// Выйти из Loopback
-	outb(base + MCR_OFFSET, 0b00001011);
+	outb(base + MCR_OFFSET, 0b00001111);
 
 	return 0;
 }

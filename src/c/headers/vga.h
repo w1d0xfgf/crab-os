@@ -3,7 +3,7 @@
 #ifndef VGA_H
 #define VGA_H
 
-enum VGA_ATTR {
+typedef enum {
 	VGA_BLACK = 0,
 	VGA_BLUE = 1,
 	VGA_GREEN = 2,
@@ -20,11 +20,11 @@ enum VGA_ATTR {
 	VGA_LIGHT_MAGENTA = 13,
 	VGA_YELLOW = 14,
 	VGA_WHITE = 15,
-};
+} vga_attr_t;
 
 typedef struct {
 	u8 x, y;
-	u8 attr;
+	vga_attr_t attr;
 } console_t;
 
 void vga_putc(console_t* con, char chr);

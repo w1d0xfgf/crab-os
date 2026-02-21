@@ -71,13 +71,13 @@ static void gpf_handler(interrupt_frame_t* frame, u32 error_code) {
 	printf(&con, "Table %d ", error_code >> 1 & 0b00000011);
 	printf(&con, "Index %d\r\n", error_code >> 3);
 	
-	// Вывести данные из фрейма прерывания
+	// Вывести регистры из фрейма прерывания
 	printf(&con,
 		"EIP    %h\r\n"
 		"EFLAGS %h\r\n"
-		"CS     %h",
+		"CS     %h\r\n",
 	frame->eip, frame->eflags, frame->cs);
-
+	
 	// Отобразить
 	vga_flush_buffer();
 
@@ -97,8 +97,8 @@ static void breakpoint_handler(interrupt_frame_t* frame) {
 
 	// Очистить экран
 	vga_clear(&con);
-
 	
+	// Вывести сообщение
 	printf(&con, 
 		"Breakpoint exception\r\n"
 		"      _~^~^~_\r\n"
@@ -108,6 +108,7 @@ static void breakpoint_handler(interrupt_frame_t* frame) {
 		"Press any key to continue\r\n"
 	);
 
+	// Вывести регистры из фрейма прерывания
 	printf(&con,
 		"EIP    %h\r\n"
 		"EFLAGS %h\r\n"

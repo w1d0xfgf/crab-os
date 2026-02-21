@@ -29,6 +29,9 @@ static mouse_packet_t packet = {
 	.idx = 0
 };
 
+// Lock для избежания записи во время чтения
+static volatile bool lock = false;
+
 // Отправить один байт мышке
 u8 send_byte(u8 byte) {
 	// Байт
@@ -54,6 +57,12 @@ void mouse_irq_handler(interrupt_frame_t* frame) {
 
 	// Получить данные
 	u8 data = inb(KBC_DATA);
+
+	// Lock
+	if (lock) {
+		pic_send_eoi(12);
+		return;
+	}
 
 	// Записать байт
 	switch (packet.idx) {
@@ -93,7 +102,6 @@ void mouse_irq_handler(interrupt_frame_t* frame) {
 		packet.idx = 0;
 	}
 
-
 	// Отправить EOI PIC
 	pic_send_eoi(12);
 }
@@ -130,8 +138,14 @@ u8 mouse_init() {
 
 // Получить состояние мышки
 mouse_state_t mouse_get_state() {
+	// Lock
+	lock = true;
+
 	// Состояние
 	mouse_state_t ret = mouse_state;
+
+	// Lock
+	lock = false;
 
 	// Сбросить DX и DY
 	mouse_state.dx = 0;

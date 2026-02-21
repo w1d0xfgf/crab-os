@@ -22,7 +22,7 @@ static volatile keyboard_buffer_t buffer = {
 static bool last_e0 = false;
 
 // Нажатые клавиши
-static bool pressed_keys[255] = {false};
+static bool pressed_keys[256] = {false};
 
 // Сохранить сканкод в буфер
 static void save_to_buffer(u16 scancode) {
@@ -79,10 +79,10 @@ void kbrd_irq_handler(interrupt_frame_t* frame) {
 // Инициализировать клавиатуру
 u8 kbrd_init() {
 	kbc_send_byte_port1(0xFF);
-	u8 byte1 = kbc_read_data();
-	u8 byte2 = kbc_read_data();
+	u16 byte1 = kbc_read_data();
+	u16 byte2 = kbc_read_data();
 
-	if (byte1 == -1 || byte2 == -1) return 2;
+	if (byte1 == 0xFFFF || byte2 == 0xFFFF) return 2;
 	if (byte1 == 0xFC) return 1;
 	return 0;
 }

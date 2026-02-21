@@ -52,6 +52,13 @@ int kmain(memory_map_entry_t* memory_map) {
 	vga_flush_buffer();
 	vga_update_cursor(&con);
 
+	// Инициализировать COM порт
+	if (serial_init(serial_get_base(0)) == 0) {
+		serial_print(serial_get_base(0), "COM1 port test");
+	} else {
+		warn(&con, "COM1 port initialization failed");
+	}
+
 	// Инициализировать PIC с размаскированным IRQ0, IRQ1, IRQ2, IRQ12
 	pic_init(0b11111000, 0b11101111);
 
@@ -62,21 +69,15 @@ int kmain(memory_map_entry_t* memory_map) {
 	pit_program(0b00110100, 10000);
 	idt_set_entry(0x20, &pit_irq_handler, 0x8E);
 
-	// Инициализировать COM порт
-	if (serial_init(serial_get_base(0)) == 0) {
-		serial_print(serial_get_base(0), "COM1 port test");
-	} else {
-		warn(&con, "COM1 port initialization failed");
-	}
-
 	// Инициализировать KBC
 	u8 kbc_dual;
 	{
-		// Проверить была ли инициализация успешна
 		u8 init_result = kbc_init();
+
+		// Проверить была ли инициализация успешна
 		switch (init_result) {	
 			case 2:
-				error(&con, "I8042 PS/2 Controller initialization failed: Self-test failed");
+				warn(&con, "I8042 PS/2 Controller initialization failed: Self-test failed");
 				break;
 			case 3:
 				warn(&con, "I8042 PS/2 Controller initialization failed: Interface tests failed");
@@ -149,36 +150,6 @@ int kmain(memory_map_entry_t* memory_map) {
 
 	// Инициализировать PMM
 	pmm_init(memory_map);
-
-	// Подсчитать свободную ОЗУ
-	{
-		u64 ram = 0;
-		for (u32 i = 0; i < 128; i++) {
-			// Получить запись из карты
-			memory_map_entry_t entry = memory_map[i];
-
-			// Если запись соответствует свободному участку памяти освободить этот участок в битмапе
-			if (entry.type == 1) {
-				ram += entry.length;
-			}
-		}
-
-		printf(&con, "%d KB memory free\r\n", (u32)(ram / 1024));
-		vga_flush_buffer();
-		vga_update_cursor(&con);
-	}
-
-	if (kbc_dual) {
-		printf(&con, "KBC is dual");
-	} else {
-		printf(&con, "KBC is not dual");
-	}
-	vga_flush_buffer();
-	vga_update_cursor(&con);
-
-	// Подождать нажатие клавиши
-	(void)kbrd_read_scancode();
-	(void)kbrd_wait_scancode();
 
 	i16 mouse_x = 400;
 	i16 mouse_y = 200;

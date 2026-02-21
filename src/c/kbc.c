@@ -22,15 +22,15 @@ static u8 kbc_send_cmd(u8 cmd) {
 }
 
 // Прочитать данные из KBC
-u8 kbc_read_data() {
+u16 kbc_read_data() {
 	// Подождать пока выходной буфер контроллера будет полным
 	for (u32 i = 0; i < 1000000; i++) {
 		if (kbc_read_status() & 0b00000001) {
 			// Получить данные
-			return inb(KBC_DATA);
+			return inb(KBC_DATA) & 0xFF;
 		}
 	}
-	return -1;
+	return 0xFFFF;
 }
 
 // Записать данные в KBC
