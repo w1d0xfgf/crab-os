@@ -45,7 +45,7 @@ void kbrd_irq_handler(interrupt_frame_t* frame) {
 	// Если данные не 0xE0 сохранить весь сканкод
 	else {
 		// Уникальные индексы для обычных и расширенных Make сканкодов
-		u8 idx = data & ~(0x80);
+		u8 idx = data & ~(0x80) & 0xFF;
 		if (last_e0) idx |= 0x80;
 
 		// Обновить таблицу

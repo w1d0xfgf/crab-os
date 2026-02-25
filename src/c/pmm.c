@@ -16,7 +16,7 @@ static void pmm_bitmap_set(u32 idx) {
 }
 
 // Получить значение одного бита в битмапе
-bool pmm_bitmap_test(u32 idx) {
+static bool pmm_bitmap_test(u32 idx) {
 	return bitmap[idx / 8] >> (idx % 8) & 0b00000001;
 }
 
@@ -52,12 +52,11 @@ void pmm_init(memory_map_entry_t* memory_map) {
 			pmm_bitmap_do_region(entry.base / 4096, (entry.length + 4095) / 4096, false);
 		}
 	}
+}
 
-	// Пометить ядро как занято
-	pmm_bitmap_do_region(0x8200 / 4096, 0x10000 / 4096, true);
-
-	// Пометить VGA буфер как занято
-	pmm_bitmap_do_region(0xA0000 / 4096, 32, true);
+// Зарезервировать участок памяти
+void pmm_reserve(u32 address, u32 length) {
+	pmm_bitmap_do_region(address / 4096, (length + 4095) / 4096, true);
 }
 
 // Выделить память

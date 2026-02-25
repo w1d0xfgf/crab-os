@@ -1,4 +1,5 @@
 #include "types.h"
+#include "idt.h"
 
 #ifndef MOUSE_H
 #define MOUSE_H

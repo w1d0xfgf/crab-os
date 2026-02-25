@@ -12,6 +12,7 @@
 #include "mouse.h"
 #include "utils.h"
 #include "serial.h"
+#include "shell.h"
 
 // Напечатать предупреждение
 void warn(console_t* con2, char* msg) {
@@ -40,7 +41,7 @@ void error(console_t* con2, char* msg) {
 	for (;;);
 }
 
-int kmain(memory_map_entry_t* memory_map) {
+u32 kmain(memory_map_entry_t* memory_map) {
 	// Инициализировать VGA
 	console_t con;
 	con.x = 0;
@@ -68,7 +69,7 @@ int kmain(memory_map_entry_t* memory_map) {
 	// Записать ISR PIT в IDT и запрограммировать канал 0 PIT на 10000 Гц
 	pit_program(0b00110100, 10000);
 	idt_set_entry(0x20, &pit_irq_handler, 0x8E);
-
+	
 	// Инициализировать KBC
 	u8 kbc_dual;
 	{
@@ -150,48 +151,11 @@ int kmain(memory_map_entry_t* memory_map) {
 
 	// Инициализировать PMM
 	pmm_init(memory_map);
+	pmm_reserve(0x8200, 50000);
+	pmm_reserve(0xA0000, 0x20000);
 
-	i16 mouse_x = 400;
-	i16 mouse_y = 200;
-	bool spkr = false;
-	u16 last_scancode = 0;
-	spkr_set_frequency(1000);
-	for (;;) {
-		// Переключать PC Speaker после каждого нажатия клавиши
-		u16 scancode = kbrd_read_scancode();
-		if (scancode > 0) {
-			last_scancode = scancode;
-			spkr = !spkr;
-			spkr ? spkr_on() : spkr_off();
-		}
-
-		vga_clear(&con);
-
-		// Напечатать всякую информацию
-		con.x = 0;
-		con.y = 0;
-		printf(&con, "%d PIT ticks", get_pit_ticks());
-
-		con.x = 0;
-		con.y = 1;
-		rtc_time_t time = cmos_read_rtc();
-		printf(&con, "Current time: %b:%b:%b", time.hour, time.minute, time.second);
-
-		con.x = 0;
-		con.y = 2;
-		printf(&con, "Last scancode: %h", last_scancode);
-		vga_update_cursor(&con);
-
-		// Курсор мышки
-		mouse_state_t state = mouse_get_state();
-		mouse_x += state.dx;
-		mouse_y -= state.dy;
-		con.x = mouse_x / 10 % 80;
-		con.y = mouse_y / 20 % 25;
-		state.lmb ? printf(&con, "o") : printf(&con, "#");
-		
-		vga_flush_buffer();
-	}
+	// Терминал
+	shell_main(&con);
 	
 	return 0;
 }

@@ -18,8 +18,8 @@ typedef struct {
 	u32 length;
 } allocation_result_t;
 
-bool pmm_bitmap_test(u32 idx);
 void pmm_init(memory_map_entry_t* memory_map);
+void pmm_reserve(u32 address, u32 length);
 allocation_result_t palloc(u32 length);
 void pfree(allocation_result_t* allocated);
 

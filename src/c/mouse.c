@@ -1,8 +1,8 @@
 #include "kbc.h"
+#include "idt.h"
 #include "pic.h"
 #include "types.h"
 #include "kbc.h"
-#include "idt.h"
 #include "ports.h"
 #include "mouse.h"
 
