@@ -5,6 +5,9 @@
 #include "shell.h"
 #include "mouse.h"
 #include "print.h"
+#include "cmos.h"
+#include "kbc.h"
+#include "pit.h"
 #include "speaker.h"
 #include "utils.h"
 
@@ -102,6 +105,25 @@ void trim(char* src, char* dest, u32 length) {
 	if (end < length) dest[end + 1] = 0;
 }
 
+// Сравнить строки
+bool strcmp(char* str1, char* str2) {
+	bool equal = true;
+
+	for (u32 i = 0; ; i++) {
+		char chr1 = str1[i];
+		char chr2 = str2[i];
+		if (chr1 != chr2) {
+			equal = false;
+			break;
+		}
+		if (chr1 == 0) {
+			break;
+		}
+	}
+
+	return equal;
+}
+
 // Обработать команду
 void process_cmd(console_t* con, const char* str, u32 length) {
 	// Разделить команду на аргументы
@@ -159,12 +181,58 @@ void process_cmd(console_t* con, const char* str, u32 length) {
 	// Обработать команду
 	console_t con2 = *con;
 	con2.attr = VGA_GRAY;
-	
-	printf(&con2, "\r\nEcho: ");
-	for (u32 i = 0; i < word_count; i++) {
-		printf(&con2, "%s ", words[i]);
+	printf(&con2, "\r\n");
+
+	// Получить имя команды
+	char* command = words[0];
+	if (strcmp("time", command)) {
+		rtc_time_t time = cmos_read_rtc();
+		printf(&con2, "Current time: %b:%b:%b %b/%b/%b",
+			time.hour, time.minute, time.second, time.day, time.month, time.year
+		);
+	} else if (strcmp("restart", command)) {
+		kbc_cpu_reset();
+	} else if (strcmp("beep", command)) {
+		if (word_count < 2) {
+			printf(&con2, "Usage: beep <time in ms>");
+		} else {
+			// Сконвертировать текст в число
+			u32 time = 0;
+			for (u32 i = 0; ; i++) {
+				char chr = words[1][i];
+				if (chr == 0) break;
+
+				// Если символ 0, 1, 2, 3, 4, 5, 6, 7, 8, или 9
+				if (chr >= '0' && chr <= '9') {
+					// Сконвертировать в цифру и добавить цифру в число
+					time = time * 10 + (chr - '0');
+				}
+			}
+			
+			// Включить звук, подождать time миллисекунд, выключить звук
+			spkr_set_frequency(500);
+			spkr_on();
+			pit_sleep_ticks(time * 10);
+			spkr_off();
+		}
+	} else if (strcmp("clear", command)) {
+		vga_clear(&con2);
+	} else if (strcmp("help", command)) {
+		printf(&con2,
+			"Available commands:\r\n"
+			"beep <time in ms>    | Makes a beep\r\n"
+			"time                 | Shows current time and date\r\n"
+			"help                 | Shows this list\r\n"
+			"restart              | Resets the CPU\r\n"
+			"clear                | Clears the screen"
+		);
+	} else {
+		printf(&con2, "Unknown command.");
 	}
 
+	// Отобразить на экран и обновить консоль
+	vga_flush_buffer();
+	vga_update_cursor(&con2);
 	con->x = con2.x;
 	con->y = con2.y;
 }
@@ -175,6 +243,10 @@ u32 shell_main(console_t* con) {
 	printf(con, "----------------\r\n");
 	printf(con, " CrabOS v0.1.7  \r\n");
 	printf(con, "----------------\r\n");
+
+	con->attr = VGA_GREEN;
+
+	printf(con, "Type `help` for a list of commands\r\n");
 
 	con->attr = VGA_WHITE;
 
